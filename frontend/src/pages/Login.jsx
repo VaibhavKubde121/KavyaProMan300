@@ -40,7 +40,7 @@ export default function Login() {
           <label className="remember"><input type="checkbox" /> Remember me</label>
           <a className="muted" href="#">Forgot password?</a>
         </div>
-        <button className="auth-btn" type="submit">Sign In</button>
+        <button className="auth-btn" type="submit"  onClick={() => navigate("/create")} >Sign In</button>
         <div className="divider">Or continue with</div>
         <div className="auth-socials">
           <button className="social">Google</button>

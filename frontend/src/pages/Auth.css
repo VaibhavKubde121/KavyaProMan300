@@ -12,3 +12,241 @@
 .auth-socials{display:flex;gap:12px}
 .social{flex:1;padding:10px;border-radius:8px;border:1px solid #e5e7eb;background:#fff}
 .remember{display:flex;align-items:center;gap:8px}
+
+
+/* ORGANIZATION PAGE  */
+
+
+.org-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+/* container */
+.org-container {
+  width: 100%;
+  max-width: 650px;
+}
+
+/* back */
+.org-back {
+  color: #4f46e5;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: 0.3s;
+}
+
+.org-back:hover {
+  text-decoration: underline;
+  transform: translateX(-3px);
+}
+
+/* title */
+.org-title {
+  font-size: 30px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.org-subtitle {
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+/* steps */
+.org-steps {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.org-step {
+  padding: 6px 14px;
+  border-radius: 30px;
+  background: #e5e7eb;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.org-step.active {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+}
+
+/* card */
+.org-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+  transition: 0.3s;
+}
+
+.org-card:hover {
+  transform: translateY(-3px);
+}
+
+/* labels */
+.org-card label {
+  display: block;
+  margin-top: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* inputs */
+.org-card input,
+.org-card textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  outline: none;
+  transition: 0.3s;
+  font-size: 14px;
+}
+
+.org-card input:focus,
+.org-card textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* URL */
+.org-url {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.org-url span {
+  background: #f3f4f6;
+  padding: 12px;
+  border-radius: 10px 0 0 10px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.org-url input {
+  border-radius: 0 10px 10px 0;
+}
+
+/* error */
+.org-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* buttons */
+.org-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 25px;
+}
+
+/* cancel */
+.org-cancel {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.org-cancel:hover {
+  background: #f3f4f6;
+}
+
+/* continue */
+.org-continue {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.org-continue:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+}
+
+/* disabled state */
+.org-continue:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+/* Upload box */
+.upload-box {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.upload-box:hover {
+  border-color: #4f46e5;
+  background: #f9fafb;
+}
+
+.upload-box p {
+  font-weight: 600;
+  color: #374151;
+}
+
+.upload-box span {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* What's next */
+.org-next {
+  background: #eef2ff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.org-next h4 {
+  margin-bottom: 8px;
+}
+
+.org-next ul {
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+/* Summary */
+.org-summary {
+  margin-top: 20px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* step done */
+.org-step.done {
+  background: #22c55e;
+  color: white;
+}
