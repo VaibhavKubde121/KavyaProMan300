@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import CreateOrganization from './pages/CreateOrganization'
+import CustomizeOrganization from './pages/CustomizeOrganization'
 
 function App() {
   const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null
