@@ -37,9 +37,9 @@ export default function Register() {
         <input value={name} onChange={e => setName(e.target.value)} required />
         <label>Email</label>
         <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-        <label>Password</label>
+        <label>Pass</label>
         <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        <button className="auth-btn" type="submit">Sign up</button>
+        <button className="auth-btn" type="submit">Register</button>
         <div className="auth-foot">Already have an account? <a href="/login">Sign in</a></div>
       </form>
     </div>
