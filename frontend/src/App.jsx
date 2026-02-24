@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import CreateOrganization from './pages/CreateOrganization'
+import CustomizeOrganization from './pages/CustomizeOrganization'
 
 function App() {
   const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null
@@ -13,6 +15,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/create" element={<CreateOrganization />} />
+        <Route path="/Customize" element={<CustomizeOrganization />} />
+
         <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>
