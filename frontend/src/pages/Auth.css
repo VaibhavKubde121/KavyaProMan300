@@ -1,9 +1,25 @@
-.auth-root{display:flex;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,#6b5bff 0%,#a24cff 100%);padding:40px}
+.auth-root{display:flex;flex-direction:column;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,#6b5bff 0%,#a24cff 100%);padding:40px;gap:28px}
+.auth-header{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:18px}
+.auth-logo{width:64px;height:64px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,0.12)}
+.auth-logo svg{width:36px;height:36px;fill:#3b82f6}
+.auth-title-main{color:#fff;font-weight:800;text-align:center;margin:0;font-size:48px;letter-spacing:0.5px}
+.auth-subtitle{color:rgba(255,255,255,0.9);margin:0;font-size:18px}
 .auth-card{background:#fff;padding:32px;border-radius:12px;max-width:420px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.15)}
-.auth-card h2{margin:0 0 8px;font-size:28px}
-.auth-card .muted{color:#6b7280;margin-bottom:14px}
+.auth-card h2{margin:0 0 8px;font-size:28px;text-align:center}
+.auth-card .muted{color:#6b7280;margin-bottom:14px;text-align:center}
 .auth-card label{display:block;margin-top:12px;font-weight:600}
-.auth-card input{width:100%;padding:12px;border-radius:8px;border:1px solid #e6e6e6;margin-top:6px}
+.auth-card input{width:100%;padding:12px;border-radius:8px;border:1px solid #e6e6e6;margin-top:6px;box-sizing:border-box}
+.password-wrapper{position:relative;width:100%}
+.password-wrapper input{padding-right:48px}
+.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;padding:6px;width:36px;height:36px;border-radius:6px;cursor:pointer;color:#6b7280;display:flex;align-items:center;justify-content:center}
+.password-toggle svg{width:18px;height:18px}
+.password-toggle:hover{color:#374151}
+.password-toggle:focus{outline:2px solid rgba(59,130,246,0.25);outline-offset:2px}
+
+@media (max-width:520px){
+	.password-wrapper{max-width:none;margin-left:0;margin-right:0}
+	.auth-title-main{font-size:36px}
+}
 .auth-btn{display:block;width:100%;background:#0f1724;color:#fff;padding:12px;border-radius:10px;border:none;margin-top:18px;font-weight:700}
 .auth-error{background:#ffe5e5;color:#a00;padding:8px;border-radius:6px;margin-bottom:8px}
 .auth-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
