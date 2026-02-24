@@ -20,7 +20,7 @@ function CreateOrganization() {
       <div className="org-container">
 
       
-        <div className="org-back" >
+        <div className="org-back" onClick={() => navigate("/organization")}>
           ← Back to Organizations
         </div>
 
@@ -93,7 +93,7 @@ function CreateOrganization() {
                   setShowError(true);
                   return;
                 }
-                navigate("/Customize");
+                navigate("/organization");
               }}
             >
               Cancel
@@ -106,7 +106,7 @@ function CreateOrganization() {
                   setShowError(true);
                   return;
                 }
-               navigate("/Customize", {
+               navigate("/customize", {
   state: { orgName, slug, desc }
 });
               }}
