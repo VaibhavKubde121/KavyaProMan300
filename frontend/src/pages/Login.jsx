@@ -20,7 +20,11 @@ export default function Login() {
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.message || 'Login failed')
-      localStorage.setItem('user', JSON.stringify({ id: body.userId, email: body.email }))
+      // store returned name if available; fall back to email
+      const userToStore = { id: body.userId, email: body.email }
+      if (body.name) userToStore.name = body.name
+      if (body.firstName && !userToStore.name) userToStore.name = body.firstName
+      localStorage.setItem('user', JSON.stringify(userToStore))
       navigate('/dashboard')
     } catch (err) {
       setError(err.message)
