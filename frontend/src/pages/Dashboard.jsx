@@ -8,6 +8,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
+  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
   const [collapsed, setCollapsed] = useState(false)
 
   function handleLogout() {
@@ -30,9 +31,9 @@ export default function Dashboard() {
         </div>
 
         <div className="org-switch mt-3 d-flex align-items-center gap-2">
-          <div className="org-icon">K</div>
+          <div className="org-icon">{selectedOrg?.name ? selectedOrg.name.charAt(0) : 'K'}</div>
           <div className="org-info">
-            <div className="org-name">Kavya Technologies</div>
+            <div className="org-name">{selectedOrg?.name || 'Kavya Technologies'}</div>
             <button className="btn btn-sm btn-outline-secondary mt-1">Switch Organization</button>
           </div>
         </div>
