@@ -51,7 +51,14 @@ function OrganizationPage() {
       {/* Header */}
       <div className="org-list-header">
         <h1 className="org-list-title">KavyaProMan 300</h1>
-        <button className="org-list-logout"  onClick={() => navigate("/login")} >Logout</button>
+        <button className="org-list-logout" onClick={() => {
+          // permanently clear session and selected org, then go to login
+          localStorage.removeItem('user')
+          localStorage.removeItem('org')
+          navigate('/login', { replace: true })
+        }}>
+          Logout
+        </button>
       </div>
 
       {/* Subtitle */}
@@ -85,10 +92,15 @@ function OrganizationPage() {
             </p>
 
             <div className="org-list-footer">
-              <span className="org-list-role">
-                {org.role}
-              </span>
-              <button className="org-list-btn">
+              <span className="org-list-role">{org.role}</span>
+              <button
+                className="org-list-btn"
+                onClick={() => {
+                  // store selected org so dashboard can pick it up
+                  localStorage.setItem('org', JSON.stringify(org))
+                  navigate('/dashboard')
+                }}
+              >
                 Open
               </button>
             </div>
