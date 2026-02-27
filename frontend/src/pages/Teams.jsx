@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom'
 import "./Teams.css";
-import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiX, FiCheck } from 'react-icons/fi'
+import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiX, FiCheck, FiRepeat, FiArrowRight } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
 
 export default function Teams() {
@@ -232,7 +232,11 @@ export default function Teams() {
           <div className="org-icon">K</div>
           <div className="org-info">
             <div className="org-name">Kavya Technologies</div>
-            <button className="btn btn-sm btn-outline-secondary mt-1">Switch Organization</button>
+            <button className="switch-org-btn mt-1" onClick={() => navigate('/organization')} aria-label="Switch Organization">
+              <span className="switch-left"><FiRepeat size={16} className="me-2" /></span>
+              <span className="switch-text">Switch Organization</span>
+              <FiArrowRight size={16} className="switch-arrow" />
+            </button>
           </div>
         </div>
 
@@ -276,6 +280,21 @@ export default function Teams() {
         </div>
       </aside>
 
+      {/* topbar shown when sidebar is collapsed: brand left, toggle right */}
+      {collapsed && (
+        <div className="topbar d-flex align-items-center px-3">
+          <div className="d-flex align-items-center">
+            <div className="brand-logo">KP</div>
+            <div className="ms-2 brand-name">KavyaProMan</div>
+          </div>
+          <div className="ms-auto">
+            <button className="btn btn-sm btn-link" onClick={() => setCollapsed(false)} aria-label="Open sidebar">
+              <FiMenu size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Toggle */}
       <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed(s => !s)} aria-label="Toggle sidebar">
         <FiMenu size={18} />
@@ -287,13 +306,31 @@ export default function Teams() {
 
           {/* Header */}
           <div className="team-header">
-            <div>
-              <h1>Team Management</h1>
-              <p>Manage team members, roles, and permissions</p>
-            </div>
-            <button className="invite-btn" onClick={() => setShowInviteModal(true)}>
-              <FiPlus className="me-1" /> Invite Member
-            </button>
+              <div>
+                <div className="top-search-row mb-3">
+                  <div className="input-group top-search-medium">
+                    <span className="input-group-text"><FiSearch /></span>
+                    <input className="form-control" placeholder="Search issues, projects..." />
+                  </div>
+
+                  <button className="btn btn-link me-2 bell-black" title="Notifications">
+                    <FiBell size={20} />
+                  </button>
+
+                  <button className="btn create-issue-medium" onClick={() => navigate('/create-issue')}>
+                    <FiPlus className="me-1" /> Create Issue
+                  </button>
+                </div>
+
+                <div>
+                  <h1>Team Management</h1>
+                  <p>Manage team members, roles, and permissions</p>
+                </div>
+              </div>
+
+              <div className="header-actions">
+                {/* header-actions left intentionally for other right-side controls */}
+              </div>
           </div>
 
           {error && (
@@ -301,6 +338,13 @@ export default function Teams() {
               Error: {error}
             </div>
           )}
+
+          {/* Invite action above stats */}
+          <div className="stats-actions">
+            <button className="btn create-issue-medium" onClick={() => setShowInviteModal(true)}>
+              <FiPlus className="me-1" /> Invite Member
+            </button>
+          </div>
 
           {/* Stats Cards - Now Clickable */}
           <div className="stats">
