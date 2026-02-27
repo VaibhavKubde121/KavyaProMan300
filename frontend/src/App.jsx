@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import OrganizationPage from './pages/OrganizationPage'
 import CreateOrganization from './pages/CreateOrganization'
 import CustomizeOrganization from './pages/CustomizeOrganization'
+import Subscription from './pages/Subscription'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/organization" element={<ProtectedRoute><OrganizationPage /></ProtectedRoute>} />
         <Route path="/create" element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
         <Route path="/customize" element={<ProtectedRoute><CustomizeOrganization /></ProtectedRoute>} />
+  <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
 
         <Route path="/" element={<Navigate to={user ? '/organization' : '/login'} replace />} />
       </Routes>
