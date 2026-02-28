@@ -166,6 +166,46 @@
 	.popular-badge svg { width:14px; height:14px; }
 }
 
+/* Upgrade modal styles */
+.upgrade-modal-overlay { position:fixed; inset:0; background:rgba(2,6,23,0.5); display:flex; align-items:center; justify-content:center; z-index:200; }
+.upgrade-modal { background:#fff; width:560px; max-width:92%; border-radius:10px; padding:22px; box-shadow:0 20px 60px rgba(2,6,23,0.3); position:relative; }
+.upgrade-modal .modal-close { position:absolute; right:12px; top:8px; font-size:20px; color:#6b7280; }
+.upgrade-modal h3 { text-align:center; margin-bottom:6px; }
+.upgrade-modal .modal-price { text-align:center; font-weight:800; font-size:28px; margin:8px 0 12px 0; }
+.upgrade-modal .modal-features { list-style:none; padding:0; margin:8px 0 14px 0; }
+.upgrade-modal .modal-features li { padding:6px 0; color:#374151; }
+.modal-payments { display:flex; gap:10px; justify-content:center; margin:12px 0 16px 0; }
+.payment-option { padding:12px 18px; border-radius:8px; border:1px solid rgba(15,23,32,0.06); cursor:pointer; }
+.payment-option.selected { border-color:#0b1226; background:#f1f5f9; }
+.modal-actions { display:flex; gap:10px; justify-content:center; margin-top:10px; }
+
+@media (max-width:600px) {
+	.upgrade-modal { padding:14px; }
+	.upgrade-modal .modal-price { font-size:20px; }
+	.payment-option { padding:8px 10px; font-size:13px; }
+}
+
+/* Payment preview visuals */
+.payment-preview { display:flex; justify-content:center; margin-top:12px; }
+.card-preview { width:320px; max-width:90%; background:linear-gradient(135deg,#0b1226 0%, #2b89ff 100%); color:#fff; padding:16px; border-radius:10px; box-shadow:0 10px 30px rgba(11,18,38,0.2); }
+.card-chip { width:42px; height:30px; background:#f6e58d; border-radius:6px; margin-bottom:12px; }
+.card-number { font-weight:700; font-size:18px; letter-spacing:2px; margin-bottom:10px; }
+.card-meta { display:flex; justify-content:space-between; font-size:12px; opacity:0.9; }
+
+.upi-preview { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.upi-card { display:flex; align-items:center; justify-content:space-between; width:320px; max-width:90%; background:#fff; border-radius:8px; padding:10px; box-shadow:0 6px 20px rgba(2,6,23,0.06); border:1px solid rgba(15,23,32,0.04); }
+.upi-left { display:flex; flex-direction:column; }
+.upi-brand { font-weight:800; color:#0b1226; margin-bottom:6px; }
+.upi-brand { display:inline-flex; align-items:center; gap:8px; color:#6b7280; font-weight:800; }
+.upi-brand::after { content:''; display:inline-block; width:20px; height:14px; background:linear-gradient(90deg,#f6b73c 0%,#10b981 100%); clip-path: polygon(0 0, 100% 50%, 0 100%); border-radius:2px; }
+.upi-id { font-weight:700; color:#0b1226; }
+.upi-right { display:flex; align-items:center; }
+
+@media (max-width:600px) {
+	.card-preview { width:260px; padding:12px; }
+	.upi-qr { width:96px; height:96px; }
+}
+
 /* Ensure help CTA is visible on small screens: pin to bottom and make buttons full width */
 @media (max-width:600px) {
 	.help-cta { position:sticky; bottom:0; left:0; right:0; background:#fff; padding:12px 16px; z-index:70; box-shadow:0 -8px 30px rgba(2,6,23,0.08); border-top:1px solid rgba(15,23,32,0.04); }

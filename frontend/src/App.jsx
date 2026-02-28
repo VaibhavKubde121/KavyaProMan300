@@ -7,8 +7,9 @@ import Dashboard from './pages/Dashboard'
 import OrganizationPage from './pages/OrganizationPage'
 import CreateOrganization from './pages/CreateOrganization'
 import CustomizeOrganization from './pages/CustomizeOrganization'
-import Teams from "./pages/Teams";
-import AllMyIssues from "./pages/AllMyIssues";
+import Subscription from './pages/Subscription'
+import PaymentMethod from './pages/PaymentMethod'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null
@@ -17,13 +18,14 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/organization" element={<OrganizationPage />} />
-        <Route path="/create" element={<CreateOrganization />} />
-        <Route path="/customize" element={<CustomizeOrganization />} />
-        <Route path="/teams" element={<Teams />} />
-        <Route path="/all-my-issues" element={<AllMyIssues />} />
-        <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/organization" element={<ProtectedRoute><OrganizationPage /></ProtectedRoute>} />
+        <Route path="/create" element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
+        <Route path="/customize" element={<ProtectedRoute><CustomizeOrganization /></ProtectedRoute>} />
+  <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+  <Route path="/payment" element={<ProtectedRoute><PaymentMethod /></ProtectedRoute>} />
+
+        <Route path="/" element={<Navigate to={user ? '/organization' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>
   )
