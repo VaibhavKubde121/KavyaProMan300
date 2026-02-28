@@ -1,7 +1,7 @@
 import { useNavigate, NavLink } from 'react-router-dom'
 import './Subscription.css'
 import './Dashboard.css'
-import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX } from 'react-icons/fi'
+import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX, FiRepeat } from 'react-icons/fi'
 import { GiCrown } from 'react-icons/gi'
 import { useState } from 'react'
 
@@ -10,7 +10,8 @@ export default function Subscription() {
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [period, setPeriod] = useState('monthly')
   const [selectedPlan, setSelectedPlan] = useState('professional')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -36,9 +37,17 @@ export default function Subscription() {
 
   function toggleFaq(i) { setOpenFaq(prev => prev === i ? null : i) }
 
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed(s => !s)
+    } else {
+      setMobileOpen(s => !s)
+    }
+  }
+
   return (
     <div className="dashboard-root d-flex">
-  <aside className={`sidebar d-flex flex-column ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -50,7 +59,11 @@ export default function Subscription() {
           <div className="org-icon">{selectedOrg?.name ? selectedOrg.name.charAt(0) : 'K'}</div>
           <div className="org-info">
             <div className="org-name">{selectedOrg?.name || 'Kavya Technologies'}</div>
-            <button className="btn btn-sm btn-outline-secondary mt-1">Switch Organization</button>
+            <button className="switch-org-btn mt-1" onClick={() => navigate('/organization')} aria-label="Switch Organization">
+              <span className="switch-left"><FiRepeat size={16} className="me-2" /></span>
+              <span className="switch-text">Switch Organization</span>
+              <FiArrowRight size={16} className="switch-arrow" />
+            </button>
           </div>
         </div>
 
@@ -94,13 +107,17 @@ export default function Subscription() {
         </div>
       </aside>
 
-      <main className={`content flex-grow-1 p-4 ${sidebarOpen ? 'with-topbar' : ''}`}>
-        <div className={`mobile-overlay ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} />
+      {/* mobile toggle button (same as Dashboard) */}
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+        <FiMenu size={18} />
+      </button>
+
+      <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
+        <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
         <div className="main-body">
           <header className="dash-header mb-4">
             <div>
               <div className="top-search-row mb-3 d-flex align-items-center">
-                <button className="btn menu-toggle d-md-none me-2" onClick={() => setSidebarOpen(s => !s)} aria-label="Toggle menu"><FiMenu /></button>
                 <div className="input-group top-search-medium">
                   <span className="input-group-text" role="button" aria-label="Open search" onClick={() => setMobileSearchOpen(true)}><FiSearch /></span>
                   <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
