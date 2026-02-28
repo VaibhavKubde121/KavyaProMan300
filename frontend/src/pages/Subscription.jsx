@@ -1,7 +1,7 @@
 import { useNavigate, NavLink } from 'react-router-dom'
 import './Subscription.css'
 import './Dashboard.css'
-import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX } from 'react-icons/fi'
+import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX, FiRepeat } from 'react-icons/fi'
 import { GiCrown } from 'react-icons/gi'
 import { useState } from 'react'
 
@@ -10,10 +10,15 @@ export default function Subscription() {
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [period, setPeriod] = useState('monthly')
   const [selectedPlan, setSelectedPlan] = useState('professional')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [modalPlan, setModalPlan] = useState(null)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card')
+  const [upiCopied, setUpiCopied] = useState(false)
 
   function handleLogout() {
     localStorage.removeItem('user')
@@ -32,9 +37,17 @@ export default function Subscription() {
 
   function toggleFaq(i) { setOpenFaq(prev => prev === i ? null : i) }
 
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed(s => !s)
+    } else {
+      setMobileOpen(s => !s)
+    }
+  }
+
   return (
     <div className="dashboard-root d-flex">
-  <aside className={`sidebar d-flex flex-column ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -46,7 +59,11 @@ export default function Subscription() {
           <div className="org-icon">{selectedOrg?.name ? selectedOrg.name.charAt(0) : 'K'}</div>
           <div className="org-info">
             <div className="org-name">{selectedOrg?.name || 'Kavya Technologies'}</div>
-            <button className="btn btn-sm btn-outline-secondary mt-1">Switch Organization</button>
+            <button className="switch-org-btn mt-1" onClick={() => navigate('/organization')} aria-label="Switch Organization">
+              <span className="switch-left"><FiRepeat size={16} className="me-2" /></span>
+              <span className="switch-text">Switch Organization</span>
+              <FiArrowRight size={16} className="switch-arrow" />
+            </button>
           </div>
         </div>
 
@@ -90,13 +107,17 @@ export default function Subscription() {
         </div>
       </aside>
 
-      <main className={`content flex-grow-1 p-4 ${sidebarOpen ? 'with-topbar' : ''}`}>
-        <div className={`mobile-overlay ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} />
+      {/* mobile toggle button (same as Dashboard) */}
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+        <FiMenu size={18} />
+      </button>
+
+      <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
+        <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
         <div className="main-body">
           <header className="dash-header mb-4">
             <div>
               <div className="top-search-row mb-3 d-flex align-items-center">
-                <button className="btn menu-toggle d-md-none me-2" onClick={() => setSidebarOpen(s => !s)} aria-label="Toggle menu"><FiMenu /></button>
                 <div className="input-group top-search-medium">
                   <span className="input-group-text" role="button" aria-label="Open search" onClick={() => setMobileSearchOpen(true)}><FiSearch /></span>
                   <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
@@ -140,6 +161,60 @@ export default function Subscription() {
             </div>
           )}
 
+          {/* Upgrade modal */}
+          {showUpgradeModal && (
+            <div className="upgrade-modal-overlay" onClick={() => setShowUpgradeModal(false)}>
+              <div className="upgrade-modal" onClick={(e) => e.stopPropagation()}>
+                <button className="modal-close btn btn-link" onClick={() => setShowUpgradeModal(false)}>×</button>
+                <h3>Upgrade to {modalPlan ? modalPlan.charAt(0).toUpperCase() + modalPlan.slice(1) : ''} Plan</h3>
+                <div className="modal-price">{modalPlan === 'professional' ? '$19' : modalPlan === 'business' ? '$25' : modalPlan === 'enterprise' ? 'Custom' : 'Free'} <span className="small-muted">/month</span></div>
+                <ul className="modal-features">
+                  <li>Full Access</li>
+                  <li>Priority Support</li>
+                  <li>Advanced Analytics</li>
+                </ul>
+
+                <div className="modal-payments">
+                  <div className={`payment-option ${selectedPaymentMethod === 'card' ? 'selected' : ''}`} onClick={() => setSelectedPaymentMethod('card')}>Credit Card</div>
+                  <div className={`payment-option ${selectedPaymentMethod === 'paypal' ? 'selected' : ''}`} onClick={() => setSelectedPaymentMethod('paypal')}>PayPal</div>
+                  <div className={`payment-option ${selectedPaymentMethod === 'upi' ? 'selected' : ''}`} onClick={() => setSelectedPaymentMethod('upi')}>UPI</div>
+                </div>
+
+                {/* Small visual preview for selected payment */}
+                <div className="payment-preview">
+                  {selectedPaymentMethod === 'card' && (
+                    <div className="card-preview">
+                      <div className="card-chip" />
+                      <div className="card-number">•••• 4242</div>
+                      <div className="card-meta"><div>JOHN DOE</div><div>12/26</div></div>
+                    </div>
+                  )}
+
+                  {selectedPaymentMethod === 'upi' && (
+                      <div className="upi-preview">
+                        <div className="upi-card">
+                          <div className="upi-left">
+                            <div className="upi-brand">UPI</div>
+                            <div className="upi-id">example@upi</div>
+                          </div>
+                          <div className="upi-right">
+                            <button className="btn btn-sm btn-outline-secondary copy-btn" onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText('example@upi'); setUpiCopied(true); setTimeout(() => setUpiCopied(false), 1400); }}>
+                              {upiCopied ? 'Copied' : 'Copy'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                </div>
+
+                <div className="modal-actions">
+                  <button className="btn btn-warning" onClick={() => { setShowUpgradeModal(false); navigate('/payment', { state: { plan: modalPlan, paymentMethod: selectedPaymentMethod } }); }}>Confirm & Subscribe</button>
+                  <button className="btn btn-outline-secondary" onClick={() => setShowUpgradeModal(false)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <section className="plans-row">
             <div
               className={`plan card p-4 ${selectedPlan === 'free' ? 'popular highlighted' : ''}`}
@@ -155,7 +230,7 @@ export default function Subscription() {
               <h4 className="plan-title">Free</h4>
               <p className="text-muted">Perfect for small teams getting started</p>
               <div className="plan-price mt-3">Free <div className="small-muted">Forever free</div></div>
-              <div className="mt-3 text-center"><button className="plan-cta btn btn-outline-secondary">Start Free <FiArrowRight className="ms-2"/></button></div>
+                <div className="mt-3 text-center"><button className="plan-cta btn btn-outline-secondary" onClick={() => { setModalPlan('free'); setShowUpgradeModal(true); }}>Start Free <FiArrowRight className="ms-2"/></button></div>
               <hr className="plan-divider" />
 
               <ul className="plan-features mt-3">
@@ -188,7 +263,7 @@ export default function Subscription() {
               <h4 className="plan-title">Professional</h4>
               <p className="text-muted">For growing teams that need more power</p>
               <div className="plan-price mt-3">{period === 'monthly' ? '$12' : '$120'} <div className="small-muted">per user/{period === 'monthly' ? 'month' : 'year'}</div></div>
-              <div className="mt-3 text-center"><button className="plan-cta btn btn-primary">Upgrade <FiArrowRight className="ms-2"/></button></div>
+              <div className="mt-3 text-center"><button className="plan-cta btn btn-primary" onClick={() => { setModalPlan('professional'); setShowUpgradeModal(true); }}>Upgrade <FiArrowRight className="ms-2"/></button></div>
               <hr className="plan-divider" />
 
               <ul className="plan-features mt-3">
@@ -221,7 +296,7 @@ export default function Subscription() {
               <h4 className="plan-title">Business</h4>
               <p className="text-muted">Advanced features for large teams</p>
               <div className="plan-price mt-3">$25 <div className="small-muted">per user/month</div></div>
-              <div className="mt-3 text-center"><button className="plan-cta btn btn-primary">Upgrade <FiArrowRight className="ms-2"/></button></div>
+              <div className="mt-3 text-center"><button className="plan-cta btn btn-primary" onClick={() => { setModalPlan('business'); setShowUpgradeModal(true); }}>Upgrade <FiArrowRight className="ms-2"/></button></div>
               <hr className="plan-divider" />
 
               <ul className="plan-features mt-3">
@@ -254,7 +329,7 @@ export default function Subscription() {
               <h4 className="plan-title">Enterprise</h4>
               <p className="text-muted">Custom solutions for enterprises</p>
               <div className="plan-price mt-3">Custom <div className="small-muted">Contact sales</div></div>
-              <div className="mt-3 text-center"><button className="plan-cta btn btn-outline-primary">Contact Sales <FiArrowRight className="ms-2"/></button></div>
+              <div className="mt-3 text-center"><button className="plan-cta btn btn-outline-primary" onClick={() => { setModalPlan('enterprise'); setShowUpgradeModal(true); }}>Contact Sales <FiArrowRight className="ms-2"/></button></div>
               <hr className="plan-divider" />
 
               <ul className="plan-features mt-3">

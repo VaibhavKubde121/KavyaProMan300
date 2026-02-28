@@ -9,6 +9,7 @@ export default function Teams() {
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState({
@@ -195,6 +196,14 @@ export default function Teams() {
     navigate('/login', { replace: true })
   }
 
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed(s => !s)
+    } else {
+      setMobileOpen(s => !s)
+    }
+  }
+
   if (loading) {
     return (
       <div className="dashboard-root d-flex">
@@ -220,7 +229,7 @@ export default function Teams() {
   return (
     <div className="dashboard-root d-flex">
       {/* Sidebar */}
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -295,10 +304,14 @@ export default function Teams() {
         </div>
       )}
 
-      {/* Mobile Toggle */}
-      <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed(s => !s)} aria-label="Toggle sidebar">
+      {/* removed separate floating toggle; single toggle button below handles both sizes */}
+
+      {/* Mobile Toggle (also toggles collapsed on large screens) */}
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
 
       {/* Main Content */}
       <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>

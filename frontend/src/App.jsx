@@ -9,7 +9,7 @@ import CreateOrganization from './pages/CreateOrganization'
 import CustomizeOrganization from './pages/CustomizeOrganization'
 import Settings from './pages/Settings'
 import Teams from "./pages/Teams";
-import AllMyIssues from "./pages/AllMyIssues";
+import Reports from "./pages/Reports";
 
 function App() {
   const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null
@@ -25,6 +25,7 @@ function App() {
         <Route path="/teams" element={<Teams />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/all-my-issues" element={<AllMyIssues />} />
+        <Route path="/reports" element={<Reports />} />
         <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>

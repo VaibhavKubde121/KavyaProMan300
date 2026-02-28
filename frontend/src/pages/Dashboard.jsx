@@ -12,6 +12,7 @@ export default function Dashboard() {
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [attachments, setAttachments] = useState([])
@@ -152,9 +153,17 @@ export default function Dashboard() {
     navigate('/login', { replace: true })
   }
 
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed(s => !s)
+    } else {
+      setMobileOpen(s => !s)
+    }
+  }
+
   return (
     <div className="dashboard-root d-flex">
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -234,10 +243,14 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* mobile toggle (visible on small/medium screens) */}
-      <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed(s => !s)} aria-label="Toggle sidebar">
+      {/* floating toggle (uses same button for large and small screens) - removed separate floating button */}
+
+      {/* mobile toggle (visible on small/medium screens) - also toggles collapsed on large screens */}
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
 
       <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="dash-header mb-4">
