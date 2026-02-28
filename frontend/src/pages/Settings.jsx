@@ -575,7 +575,8 @@ function SecuritySection() {
             Enable 2FA
           </button>
         )}
-
+    
+       
         {twoFactorEnabled && (
           <button 
             className="btn btn-outline-danger mt-2"
