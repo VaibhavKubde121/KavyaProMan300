@@ -11,6 +11,7 @@ export default function AllMyIssues(){
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [editingIndex, setEditingIndex] = useState(-1)
   const [editFields, setEditFields] = useState({ project:'', issueType:'Story', epicName:'', summary:'', description:'', attachments:[] })
   const [editErrors, setEditErrors] = useState({})
@@ -156,6 +157,14 @@ export default function AllMyIssues(){
     navigate('/login', { replace: true })
   }
 
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed(s => !s)
+    } else {
+      setMobileOpen(s => !s)
+    }
+  }
+
   function handleDifficultyChange(idx, level){
     try{
       const item = issues[idx]
@@ -175,7 +184,7 @@ export default function AllMyIssues(){
 
   return (
     <div className="dashboard-root d-flex">
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -248,9 +257,12 @@ export default function AllMyIssues(){
         </div>
       )}
 
-      <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed(s => !s)} aria-label="Toggle sidebar">
+      {/* single toggle button handles large and small screens */}
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
 
       <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <div style={{display:'flex',alignItems:'center',gap:12,marginTop:70}}>

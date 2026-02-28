@@ -42,6 +42,24 @@
 
 /* small downward offset for the top search row to match spacing expectations */
 .top-search-row { margin-top: 20px; }
+.top-search-medium{flex:0 0 560px;max-width:560px}
+/* Top-search styles copied from Dashboard for consistency */
+.top-search-medium.input-group, .top-search-medium{
+  background:#f7f8fa;
+  border:1px solid rgba(0,0,0,0.06);
+  border-radius:12px;
+  padding:6px 10px;
+  align-items:center;
+}
+.top-search-medium .input-group-text{background:transparent;border:none;color:#9aa3ad;padding:0 8px}
+.top-search-medium .form-control{border:none;background:transparent;padding:8px 6px;font-size:15px;color:#374151}
+.top-search-medium .form-control::placeholder{color:#9ca3af}
+
+/* Bell and Create Issue styles (matching Dashboard) */
+.bell-black{color:#000 !important;position:relative}
+.bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
+.create-issue-medium{background:#05060a !important;color:#fff !important;border:none !important;min-width:180px;padding:10px 18px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.create-issue-medium:hover{background:#000 !important}
 .invite-btn {
   background: #1a202c;
   color: white;
@@ -218,6 +236,15 @@
   font-size: 11px;
   font-weight: 600;
   margin-left: 0;
+}
+
+/* Mobile sidebar open/overlay behavior to match Subscription page */
+@media(max-width:992px){
+  .sidebar{position:fixed;left:-320px;top:0;height:100vh;z-index:1050;width:320px;transition:left .28s ease}
+  .sidebar.open{left:0}
+  .mobile-overlay{display:none}
+  .mobile-overlay.show{display:block;position:fixed;inset:0;background:rgba(2,6,23,0.45);z-index:1040}
+  .menu-toggle{display:inline-flex}
 }
 
 .role.admin {
