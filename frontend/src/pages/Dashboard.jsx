@@ -16,6 +16,11 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [attachments, setAttachments] = useState([])
+  const [avatar, setAvatar] = useState('')
+  useEffect(() => {
+    const stored = localStorage.getItem('userAvatar')
+    if (stored) setAvatar(stored)
+  }, [])
   const [project, setProject] = useState('KavyaProMan 360')
   const [issueType, setIssueType] = useState('Story')
   const [epicName, setEpicName] = useState('')
@@ -207,7 +212,9 @@ export default function Dashboard() {
 
           <div className="sidebar-footer mt-3 d-flex flex-column align-items-start">
             <div className="profile d-flex align-items-center w-100">
-              <div className="avatar-icon"><FiUser size={20} /></div>
+              <div className="avatar-icon">
+            {avatar ? <img src={avatar} alt="avatar" /> : <FiUser size={20} />}
+          </div>
               <div className="ms-2 user-info">
                 <div className="user-name">{displayName}</div>
                 <div className="user-role">Admin</div>
