@@ -67,6 +67,25 @@
   .mobile-toggle{display:flex}
 }
 
+/* Make top header match the supplied design on small and medium screens
+   Keep large screens unchanged. At <=992px show the search input, bell and
+   create button in a single horizontal row. */
+@media (max-width: 992px) {
+  .top-search-row{display:flex;align-items:center;gap:8px;width:100%}
+
+  /* search expands to fill available space on small/medium screens */
+  .top-search-medium{flex:1 1 auto;max-width:none;padding:6px 10px;border-radius:12px;background:#f7f8fa;border:1px solid rgba(0,0,0,0.06);display:flex;align-items:center}
+  .top-search-medium .input-group-text{background:transparent;border:none;color:#9aa3ad;padding:0 8px;display:flex;align-items:center;justify-content:center}
+  .top-search-medium input{display:block;width:100%;border:none;background:transparent;padding:8px 6px;font-size:15px;color:#374151}
+
+  /* bell and red dot spacing */
+  .bell-black{color:#000;position:relative;margin-left:8px;margin-right:6px}
+  .bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
+
+  /* create button kept visible and compact to fit the row */
+  .create-issue-medium{min-width:140px;padding:8px 12px;font-size:14px;border-radius:8px;background:#05060a;color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+}
+
 /* Mobile overlay and open class to control sidebar on small screens */
 @media(max-width:992px){
   .sidebar.open{transform:translateX(0) !important}
