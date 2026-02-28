@@ -497,11 +497,21 @@
   box-sizing: border-box;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+.form-group input:focus, .form-group select:focus {
   outline: none;
   border-color: #1a202c;
   box-shadow: 0 0 0 3px rgba(26, 32, 44, 0.1);
+}
+
+/* Ensure header controls (search pill, bell, create button) match design on small/medium screens */
+@media (max-width: 992px) {
+  .top-search-row{display:flex;align-items:center;gap:8px}
+  .top-search-medium{flex:0 0 48px;max-width:48px;width:48px;padding:6px;border-radius:12px;justify-content:center;background:transparent}
+  .top-search-medium .input-group-text{background:#eaf4ff;border-radius:10px;padding:6px;display:flex;align-items:center;justify-content:center;box-shadow:none;border:0}
+  .top-search-medium input{display:none}
+  .bell-black{color:#000 !important;position:relative;margin-left:6px}
+  .bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
+  .create-issue-medium{min-width:120px;padding:8px 10px;font-size:13px;border-radius:8px;background:#05060a !important;color:#fff !important;border:none !important;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 }
 
 .modal-footer {

@@ -329,7 +329,7 @@ export default function Subscription() {
               <h4 className="plan-title">Enterprise</h4>
               <p className="text-muted">Custom solutions for enterprises</p>
               <div className="plan-price mt-3">Custom <div className="small-muted">Contact sales</div></div>
-              <div className="mt-3 text-center"><button className="plan-cta btn btn-outline-primary" onClick={() => { setModalPlan('enterprise'); setShowUpgradeModal(true); }}>Contact Sales <FiArrowRight className="ms-2"/></button></div>
+              <div className="mt-3 text-center"><button className="plan-cta btn btn-outline-primary" onClick={() => window.location.href = '/contact-sales'}>Contact Sales <FiArrowRight className="ms-2"/></button></div>
               <hr className="plan-divider" />
 
               <ul className="plan-features mt-3">

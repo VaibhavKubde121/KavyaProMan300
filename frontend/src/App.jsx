@@ -10,6 +10,9 @@ import CustomizeOrganization from './pages/CustomizeOrganization'
 import Settings from './pages/Settings'
 import Teams from "./pages/Teams";
 import Reports from "./pages/Reports";
+import Subscription from './pages/Subscription'
+import PaymentMethod from './pages/PaymentMethod'
+import ContactSales from './pages/ContactSales'
 
 function App() {
   const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null
@@ -26,6 +29,9 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/all-my-issues" element={<AllMyIssues />} />
         <Route path="/reports" element={<Reports />} />
+  <Route path="/subscription" element={<Subscription />} />
+  <Route path="/payment" element={<PaymentMethod />} />
+  <Route path="/contact-sales" element={<ContactSales />} />
         <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>
