@@ -1,0 +1,307 @@
+/* ============ Tab Navigation ============ */
+.settings-tabs-container {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.settings-tabs {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tab-pill {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 10px 20px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 24px;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.tab-pill:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.tab-pill.active {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+}
+
+/* ============ Settings Content ============ */
+.settings-content {
+  padding: 0;
+}
+
+.settings-card {
+  background: #fff;
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(15, 23, 36, 0.03);
+  border: 1px solid #f0f1f3;
+}
+
+.card-header {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+}
+
+.card-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.card-header p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ============ Avatar Section ============ */
+.avatar-section .avatar-preview {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6b5bff, #0d6efd);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(107, 91, 255, 0.2);
+  overflow: hidden;
+}
+
+.avatar-section .avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ============ Form Styling ============ */
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.form-control {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #374151;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+  outline: none;
+}
+
+.form-control::placeholder {
+  color: #9ca3af;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+/* ============ Button Styling ============ */
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 18px;
+  border: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #0d6efd;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #0b5ed7;
+  color: #fff;
+}
+
+.btn-dark {
+  background: #1f2937;
+  color: #fff;
+}
+
+.btn-dark:hover {
+  background: #111827;
+}
+
+.btn-outline-secondary {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
+}
+
+.btn-outline-secondary:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btn-outline-danger {
+  border: 1px solid #f87171;
+  background: #fff;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.btn-outline-danger:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
+
+/* ============ Notifications List ============ */
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notification-item {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #f0f1f3;
+}
+
+.notification-item .notif-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ============ Toggle Switch ============ */
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  background: #e5e7eb;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.toggle-switch.active {
+  background: #0d6efd;
+}
+
+.toggle-slider {
+  width: 24px;
+  height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-switch.active .toggle-slider {
+  transform: translateX(20px);
+}
+
+.toggle-input {
+  display: none;
+}
+
+/* ============ Alert ============ */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: none;
+}
+
+.alert-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* ============ QR Code Section ============ */
+.qr-code-section {
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #f0f1f3;
+  margin-bottom: 20px;
+}
+
+.qr-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.qr-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 140px;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.qr-code-box svg {
+  width: 120px;
+  height: 120px;
+}
+
+.qr-placeholder p {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-row .form-group {
+    margin-right: 0 !important;
+  }
+
+  .settings-card {
+    padding: 20px;
+  }
+
+  .tab-pill {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}

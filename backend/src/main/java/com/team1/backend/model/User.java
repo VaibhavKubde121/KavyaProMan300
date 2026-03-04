@@ -25,12 +25,32 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    // new profile fields for settings
+    @Column(length = 1024)
+    private String avatar;           // base64 or URL
+
+    @Column(nullable = false)
+    private String role = "Member";
+
+    @Column(nullable = false)
+    private String timezone = "UTC";
+
     public User() {}
 
     public User(String name, String email, String password) {
         this.name = name;
         this.email = email;
         this.password = password;
+    }
+
+    // convenience constructor used when creating a user with full profile
+    public User(String name, String email, String password, String avatar, String role, String timezone) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.avatar = avatar;
+        this.role = role;
+        this.timezone = timezone;
     }
 
     public Long getId() {
@@ -63,5 +83,29 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
     }
 }

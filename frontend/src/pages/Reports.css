@@ -1,0 +1,146 @@
+/* ===========================
+   MAIN CONTAINER
+=========================== */
+.reports-container {
+  padding: 30px;
+  background: #f6f8fa;
+  min-height: 100vh;
+}
+
+/* ===========================
+   HEADER
+=========================== */
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.reports-header h1 {
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.reports-header p {
+  color: #6a737d;
+  margin-top: 5px;
+}
+
+.project-dropdown {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-weight: 500;
+  background: #fff;
+}
+
+/* ===========================
+   SUMMARY CARDS (BIGGER)
+=========================== */
+.reports-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.report-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 28px 30px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  transition: 0.3s ease;
+}
+
+.report-card:hover {
+  transform: translateY(-4px);
+}
+
+.report-card h4 {
+  font-size: 15px;
+  color: #586069;
+  margin-bottom: 6px;
+}
+
+.report-card h2 {
+  font-size: 32px;     /* Bigger numbers */
+  font-weight: 600;
+}
+
+/* ICON BOX BIGGER */
+.card-icon {
+  font-size: 22px;     /* clean icon size */
+  flex-shrink: 0;
+}
+
+/* Icon colors only */
+.blue-icon { color: #0969da; }
+.green-icon { color: #2da44e; }
+.purple-icon { color: #8250df; }
+.orange-icon { color: #f97316; }
+
+/* ===========================
+   TABS (FIXED ACTIVE COLOR)
+=========================== */
+.report-tabs {
+  display: flex;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.report-tabs button {
+  padding: 10px 22px;
+  border-radius: 25px;
+  border: none;
+  background: #e9eef5;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+/* Active tab */
+.report-tabs button.active-tab {
+  background: #0969da;
+  color: #ffffff;   /* FIXED TEXT COLOR */
+}
+
+/* Hover */
+.report-tabs button:hover {
+  background: #d6e4f8;
+}
+
+/* ===========================
+   CHART CONTAINER
+=========================== */
+.reports-chart {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  margin-top: 25px;
+}
+
+/* ===========================
+   DISTRIBUTION GRID
+=========================== */
+.distribution-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+.distribution-card {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.distribution-card h4 {
+  margin-bottom: 4px;
+  font-size: 18px;
+}

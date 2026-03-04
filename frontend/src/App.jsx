@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import OrganizationPage from './pages/OrganizationPage'
 import CreateOrganization from './pages/CreateOrganization'
 import CustomizeOrganization from './pages/CustomizeOrganization'
+import Settings from './pages/Settings'
 import Teams from "./pages/Teams";
 import Project from './pages/Project'
 import Board from './pages/Board'
