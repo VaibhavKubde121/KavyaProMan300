@@ -15,6 +15,12 @@ export default function Dashboard() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Issue KPM-7 assigned to you', time: '2m ago', read: false },
+    { id: 2, title: 'Sprint planning starts in 30 minutes', time: '15m ago', read: false },
+    { id: 3, title: 'Michael commented on KPM-3', time: '1h ago', read: true }
+  ])
   const [attachments, setAttachments] = useState([])
   const [avatar, setAvatar] = useState('')
   useEffect(() => {
@@ -27,7 +33,63 @@ export default function Dashboard() {
   const [summary, setSummary] = useState('')
   const [errors, setErrors] = useState({})
   const [selectedDifficulty, setSelectedDifficulty] = useState('Medium')
+  const createEmptyFilters = () => ({
+    status: [],
+    issueType: [],
+    sprint: [],
+    priority: [],
+    assignee: [],
+    project: [],
+    dueFrom: '',
+    dueTo: ''
+  })
+  const [selectedFilters, setSelectedFilters] = useState(createEmptyFilters)
+  const [savedFilters, setSavedFilters] = useState([])
   const fileInputRef = useRef(null)
+  const notificationRef = useRef(null)
+  const unreadCount = notifications.filter(n => !n.read).length
+  const activeFilterCount =
+    selectedFilters.status.length +
+    selectedFilters.issueType.length +
+    selectedFilters.sprint.length +
+    selectedFilters.priority.length +
+    selectedFilters.assignee.length +
+    selectedFilters.project.length +
+    (selectedFilters.dueFrom ? 1 : 0) +
+    (selectedFilters.dueTo ? 1 : 0)
+
+  useEffect(() => {
+    function handleOutsideClick(e) {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('dashboardSavedFilters')
+      const parsed = raw ? JSON.parse(raw) : []
+      if (Array.isArray(parsed)) setSavedFilters(parsed)
+    } catch (err) {
+      console.error('failed to load saved filters', err)
+    }
+  }, [])
+
+  function toggleNotifications() {
+    setShowNotifications(prev => !prev)
+  }
+
+  function markAsRead(id) {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)))
+  }
+
+  function markAllAsRead() {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
   // convert File -> data URL and store with metadata so files can be opened later
   function fileToDataUrl(file){
     return new Promise((res, rej) => {
@@ -161,6 +223,75 @@ export default function Dashboard() {
     }
   }
 
+  function toggleFilterSelection(group, value) {
+    setSelectedFilters((prev) => {
+      const exists = prev[group].includes(value)
+      return {
+        ...prev,
+        [group]: exists
+          ? prev[group].filter((item) => item !== value)
+          : [...prev[group], value]
+      }
+    })
+  }
+
+  function clearAllFilters() {
+    setSelectedFilters(createEmptyFilters())
+  }
+
+  function getFilterSummary(filters) {
+    const parts = []
+    if (filters.status.length) parts.push(`${filters.status.length} status`)
+    if (filters.issueType.length) parts.push(`${filters.issueType.length} issue type`)
+    if (filters.sprint.length) parts.push(`${filters.sprint.length} sprint`)
+    if (filters.priority.length) parts.push(`${filters.priority.length} priority`)
+    if (filters.assignee.length) parts.push(`${filters.assignee.length} assignee`)
+    if (filters.project.length) parts.push(`${filters.project.length} project`)
+    if (filters.dueFrom || filters.dueTo) parts.push('due date range')
+    return parts.length ? parts.join(', ') : 'No filters selected'
+  }
+
+  function saveCurrentFilter() {
+    if (activeFilterCount === 0) return
+    const newFilter = {
+      id: Date.now(),
+      name: `Custom Filter ${savedFilters.length + 1}`,
+      description: getFilterSummary(selectedFilters),
+      criteria: { ...selectedFilters }
+    }
+    const updated = [newFilter, ...savedFilters]
+    setSavedFilters(updated)
+    try {
+      localStorage.setItem('dashboardSavedFilters', JSON.stringify(updated))
+    } catch (err) {
+      console.error('failed to save filter', err)
+    }
+    setShowFilters(false)
+  }
+
+  function applySavedFilter(criteria) {
+    setSelectedFilters({
+      status: [...criteria.status],
+      issueType: [...criteria.issueType],
+      sprint: [...criteria.sprint],
+      priority: [...criteria.priority],
+      assignee: [...criteria.assignee],
+      project: [...criteria.project],
+      dueFrom: criteria.dueFrom || '',
+      dueTo: criteria.dueTo || ''
+    })
+  }
+
+  function deleteSavedFilter(id) {
+    const updated = savedFilters.filter((item) => item.id !== id)
+    setSavedFilters(updated)
+    try {
+      localStorage.setItem('dashboardSavedFilters', JSON.stringify(updated))
+    } catch (err) {
+      console.error('failed to delete saved filter', err)
+    }
+  }
+
   return (
     <div className="dashboard-root d-flex">
       <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
@@ -261,9 +392,35 @@ export default function Dashboard() {
                 <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
               </div>
 
-              <button className="btn btn-link me-2 bell-black" title="Notifications">
-                <FiBell size={20} />
-              </button>
+              <div className="notification-wrapper me-2" ref={notificationRef}>
+                <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications}>
+                  <FiBell size={20} />
+                  {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+                </button>
+
+                {showNotifications && (
+                  <div className="notification-dropdown">
+                    <div className="notification-header">
+                      <span>Notifications</span>
+                      {unreadCount > 0 && (
+                        <button className="mark-all-btn" onClick={markAllAsRead}>Mark all read</button>
+                      )}
+                    </div>
+                    <div className="notification-list">
+                      {notifications.map((n) => (
+                        <button
+                          key={n.id}
+                          className={`notification-item-row ${n.read ? 'read' : 'unread'}`}
+                          onClick={() => markAsRead(n.id)}
+                        >
+                          <div className="notification-title">{n.title}</div>
+                          <div className="notification-time">{n.time}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <button className="btn create-issue-medium" onClick={() => setShowCreate(true)}>
                 <FiPlus className="me-1" /> Create Issue
@@ -278,7 +435,9 @@ export default function Dashboard() {
               <span className="input-group-text"><FiSearch /></span>
               <input className="form-control" placeholder="Search issues by title, key, description..." />
             </div>
-            <button className="btn btn-outline-secondary" onClick={() => setShowFilters(true)}>Filters</button>
+            <button className="btn btn-outline-secondary" onClick={() => setShowFilters(true)}>
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
           </div>
         </header>
 
@@ -299,31 +458,31 @@ export default function Dashboard() {
                     <div className="filter-section">
                       <h6>Status</h6>
                       <div className="filter-list">
-                        <label><input type="checkbox" /> To Do</label>
-                        <label><input type="checkbox" /> In Progress</label>
-                        <label><input type="checkbox" /> In Review</label>
-                        <label><input type="checkbox" /> Done</label>
-                        <label><input type="checkbox" /> Backlog</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('To Do')} onChange={() => toggleFilterSelection('status', 'To Do')} /> To Do</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('In Progress')} onChange={() => toggleFilterSelection('status', 'In Progress')} /> In Progress</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('In Review')} onChange={() => toggleFilterSelection('status', 'In Review')} /> In Review</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('Done')} onChange={() => toggleFilterSelection('status', 'Done')} /> Done</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('Backlog')} onChange={() => toggleFilterSelection('status', 'Backlog')} /> Backlog</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Issue Type</h6>
                       <div className="filter-list">
-                        <label><input type="checkbox" /> ⚡ Epic</label>
-                        <label><input type="checkbox" /> 📘 Story</label>
-                        <label><input type="checkbox" /> ✓ Task</label>
-                        <label><input type="checkbox" /> 🐛 Bug</label>
-                        <label><input type="checkbox" /> ↳ Sub-task</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Epic')} onChange={() => toggleFilterSelection('issueType', 'Epic')} /> ⚡ Epic</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Story')} onChange={() => toggleFilterSelection('issueType', 'Story')} /> 📘 Story</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Task')} onChange={() => toggleFilterSelection('issueType', 'Task')} /> ✓ Task</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Bug')} onChange={() => toggleFilterSelection('issueType', 'Bug')} /> 🐛 Bug</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Sub-task')} onChange={() => toggleFilterSelection('issueType', 'Sub-task')} /> ↳ Sub-task</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Sprint</h6>
                       <div className="filter-list">
-                        <label><input type="checkbox" /> Sprint 1 - Foundation <span className="muted">(completed)</span></label>
-                        <label><input type="checkbox" /> Sprint 2 - Board Implementation <span className="muted">(active)</span></label>
-                        <label><input type="checkbox" /> Sprint 3 - Advanced Features <span className="muted">(planned)</span></label>
+                        <label><input type="checkbox" checked={selectedFilters.sprint.includes('Sprint 1 - Foundation')} onChange={() => toggleFilterSelection('sprint', 'Sprint 1 - Foundation')} /> Sprint 1 - Foundation <span className="muted">(completed)</span></label>
+                        <label><input type="checkbox" checked={selectedFilters.sprint.includes('Sprint 2 - Board Implementation')} onChange={() => toggleFilterSelection('sprint', 'Sprint 2 - Board Implementation')} /> Sprint 2 - Board Implementation <span className="muted">(active)</span></label>
+                        <label><input type="checkbox" checked={selectedFilters.sprint.includes('Sprint 3 - Advanced Features')} onChange={() => toggleFilterSelection('sprint', 'Sprint 3 - Advanced Features')} /> Sprint 3 - Advanced Features <span className="muted">(planned)</span></label>
                       </div>
                     </div>
                   </div>
@@ -332,28 +491,28 @@ export default function Dashboard() {
                     <div className="filter-section">
                       <h6>Priority</h6>
                       <div className="filter-list priority-list">
-                        <label><input type="checkbox" /><span className="dot dot-red"/> High</label>
-                        <label><input type="checkbox" /><span className="dot dot-orange"/> Medium</label>
-                        <label><input type="checkbox" /><span className="dot dot-green"/> Low</label>
+                        <label><input type="checkbox" checked={selectedFilters.priority.includes('High')} onChange={() => toggleFilterSelection('priority', 'High')} /><span className="dot dot-red"/> High</label>
+                        <label><input type="checkbox" checked={selectedFilters.priority.includes('Medium')} onChange={() => toggleFilterSelection('priority', 'Medium')} /><span className="dot dot-orange"/> Medium</label>
+                        <label><input type="checkbox" checked={selectedFilters.priority.includes('Low')} onChange={() => toggleFilterSelection('priority', 'Low')} /><span className="dot dot-green"/> Low</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Assignee</h6>
                       <div className="filter-list assignee-list">
-                        <label><input type="checkbox" /> <span className="small-avatar">SJ</span> Sarah Johnson</label>
-                        <label><input type="checkbox" /> <span className="small-avatar">MC</span> Michael Chen</label>
-                        <label><input type="checkbox" /> <span className="small-avatar">ER</span> Emily Rodriguez</label>
-                        <label><input type="checkbox" /> <span className="small-avatar">DK</span> David Kim</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('Sarah Johnson')} onChange={() => toggleFilterSelection('assignee', 'Sarah Johnson')} /> <span className="small-avatar">SJ</span> Sarah Johnson</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('Michael Chen')} onChange={() => toggleFilterSelection('assignee', 'Michael Chen')} /> <span className="small-avatar">MC</span> Michael Chen</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('Emily Rodriguez')} onChange={() => toggleFilterSelection('assignee', 'Emily Rodriguez')} /> <span className="small-avatar">ER</span> Emily Rodriguez</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('David Kim')} onChange={() => toggleFilterSelection('assignee', 'David Kim')} /> <span className="small-avatar">DK</span> David Kim</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Project</h6>
                       <div className="filter-list project-list">
-                        <label><input type="checkbox" /> 🚀 KavyaProMan 360</label>
-                        <label><input type="checkbox" /> 🌐 Website Redesign</label>
-                        <label><input type="checkbox" /> 📱 Mobile App</label>
+                        <label><input type="checkbox" checked={selectedFilters.project.includes('KavyaProMan 360')} onChange={() => toggleFilterSelection('project', 'KavyaProMan 360')} /> 🚀 KavyaProMan 360</label>
+                        <label><input type="checkbox" checked={selectedFilters.project.includes('Website Redesign')} onChange={() => toggleFilterSelection('project', 'Website Redesign')} /> 🌐 Website Redesign</label>
+                        <label><input type="checkbox" checked={selectedFilters.project.includes('Mobile App')} onChange={() => toggleFilterSelection('project', 'Mobile App')} /> 📱 Mobile App</label>
                       </div>
                     </div>
                   </div>
@@ -365,20 +524,30 @@ export default function Dashboard() {
                   <div className="due-col">
                     <div className="muted">Due Date Range</div>
                     <label className="small-muted">From</label>
-                    <input type="date" className="date-input" />
+                    <input
+                      type="date"
+                      className="date-input"
+                      value={selectedFilters.dueFrom}
+                      onChange={(e) => setSelectedFilters(prev => ({ ...prev, dueFrom: e.target.value }))}
+                    />
                   </div>
                   <div className="due-col mt-4">
                     <label className="small-muted">To</label>
-                    <input type="date" className="date-input" />
+                    <input
+                      type="date"
+                      className="date-input"
+                      value={selectedFilters.dueTo}
+                      onChange={(e) => setSelectedFilters(prev => ({ ...prev, dueTo: e.target.value }))}
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="filters-modal-footer d-flex align-items-center">
-                <button className="link-clear">Clear All Filters</button>
+                <button className="link-clear" onClick={clearAllFilters} type="button">Clear All Filters</button>
                 <div className="ms-auto d-flex gap-3">
                   <button className="btn btn-outline-secondary" onClick={() => setShowFilters(false)}>Close</button>
-                  <button className="btn save-filter">Save Filter</button>
+                  <button className="btn save-filter" onClick={saveCurrentFilter} disabled={activeFilterCount === 0}>Save Filter</button>
                 </div>
               </div>
             </div>
@@ -532,41 +701,69 @@ export default function Dashboard() {
             </div>
 
             <div className="saved-inner-grid">
-              <div className="inner-filter-card">
-                <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
-                  <div>
-                    <h6>High Priority Tasks</h6>
-                    <p className="filter-desc">All high and highest priority tasks</p>
-                  </div>
+              {savedFilters.length > 0 ? (
+                savedFilters.map((item) => (
+                  <div className="inner-filter-card" key={item.id}>
+                    <div className="inner-content">
+                      <div>
+                        <h6>{item.name}</h6>
+                        <p className="filter-desc">{item.description}</p>
+                      </div>
 
-                  <div className="filter-actions-row">
-                    <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
-                    <div className="icons-row">
-                      <button className="icon-btn" title="Share"><FiShare2 /></button>
-                      <button className="icon-btn" title="Download"><FiDownload /></button>
-                      <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
+                      <div className="filter-actions-row">
+                        <button className="apply-btn" onClick={() => applySavedFilter(item.criteria)}>
+                          <FiFilter className="me-2" />Apply
+                        </button>
+                        <div className="icons-row">
+                          <button className="icon-btn" title="Share"><FiShare2 /></button>
+                          <button className="icon-btn" title="Download"><FiDownload /></button>
+                          <button className="icon-btn danger" title="Delete" onClick={() => deleteSavedFilter(item.id)}>
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                ))
+              ) : (
+                <>
+                  <div className="inner-filter-card">
+                    <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
+                      <div>
+                        <h6>High Priority Tasks</h6>
+                        <p className="filter-desc">All high and highest priority tasks</p>
+                      </div>
 
-              <div className="inner-filter-card">
-                <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
-                  <div>
-                    <h6>My Open Issues <span className="shared-badge">Shared</span></h6>
-                    <p className="filter-desc">Issues assigned to me that are not completed</p>
-                  </div>
-
-                  <div className="filter-actions-row">
-                    <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
-                    <div className="icons-row">
-                      <button className="icon-btn" title="Share"><FiShare2 /></button>
-                      <button className="icon-btn" title="Download"><FiDownload /></button>
-                      <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
+                      <div className="filter-actions-row">
+                        <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
+                        <div className="icons-row">
+                          <button className="icon-btn" title="Share"><FiShare2 /></button>
+                          <button className="icon-btn" title="Download"><FiDownload /></button>
+                          <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+
+                  <div className="inner-filter-card">
+                    <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
+                      <div>
+                        <h6>My Open Issues <span className="shared-badge">Shared</span></h6>
+                        <p className="filter-desc">Issues assigned to me that are not completed</p>
+                      </div>
+
+                      <div className="filter-actions-row">
+                        <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
+                        <div className="icons-row">
+                          <button className="icon-btn" title="Share"><FiShare2 /></button>
+                          <button className="icon-btn" title="Download"><FiDownload /></button>
+                          <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -770,3 +967,4 @@ export default function Dashboard() {
     </div>
   )
 }
+

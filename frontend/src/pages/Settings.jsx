@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   FiGrid,
   FiFolder,
@@ -25,7 +25,8 @@ import {
   FiAlignLeft,
   FiAlignCenter,
   FiAlignRight,
-  FiAlignJustify
+  FiAlignJustify,
+  FiX
 } from 'react-icons/fi'
 import './Settings.css'
 import './Dashboard.css'
@@ -184,13 +185,32 @@ const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Gue
 
 // ============ Profile Section ============
 function ProfileSection() {
-  const [formData, setFormData] = useState({
-    firstName: 'Sarah',
-    lastName: 'Johnson',
-    email: 'sarah@kavyaproman.com',
-    role: 'Admin',
-    timezone: 'UTC'
+  const [formData, setFormData] = useState(() => {
+    const savedProfile = JSON.parse(localStorage.getItem('profileSettings') || 'null')
+    if (savedProfile) return savedProfile
+
+    const user = JSON.parse(localStorage.getItem('user') || 'null')
+    const fullName = (user?.name || '').trim()
+    const nameParts = fullName ? fullName.split(/\s+/) : []
+
+    return {
+      firstName: nameParts[0] || 'Sarah',
+      lastName: nameParts.slice(1).join(' ') || 'Johnson',
+      email: user?.email || 'sarah@kavyaproman.com',
+      role: 'Admin',
+      timezone: 'UTC'
+    }
   })
+  const [avatar, setAvatar] = useState('')
+  const [showAvatarViewer, setShowAvatarViewer] = useState(false)
+  const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    const stored = localStorage.getItem('userAvatar')
+    if (stored) {
+      setAvatar(stored)
+    }
+  }, [])
 
   
   const handleChange = (e) => {
@@ -198,7 +218,58 @@ function ProfileSection() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload JPG, PNG, or GIF image only.')
+      e.target.value = ''
+      return
+    }
+
+    const maxSize = 2 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert('Image size must be less than 2MB.')
+      e.target.value = ''
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      if (!result) return
+      setAvatar(result)
+      localStorage.setItem('userAvatar', result)
+      alert('Avatar uploaded successfully!')
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  const handleAvatarPreview = () => {
+    if (!avatar) return
+    setShowAvatarViewer(true)
+  }
+
   const handleSave = () => {
+    localStorage.setItem('profileSettings', JSON.stringify(formData))
+
+    const existingUser = JSON.parse(localStorage.getItem('user') || 'null')
+    if (existingUser) {
+      const updatedUser = {
+        ...existingUser,
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email
+      }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+    }
+
     console.log('Profile saved:', formData)
     alert('Profile changes saved successfully!')
   }
@@ -211,12 +282,45 @@ function ProfileSection() {
       </div>
 
       <div className="avatar-section d-flex align-items-center mb-4 pb-4" style={{ borderBottom: '1px solid #e5e7eb' }}>
-        <div className="avatar-preview">SJ</div>
-        <button className="btn btn-outline-secondary btn-sm ms-3">
+        <div
+          className={`avatar-preview ${avatar ? 'clickable' : ''}`}
+          onClick={handleAvatarPreview}
+          title={avatar ? 'Click to view avatar' : ''}
+        >
+          {avatar ? <img src={avatar} alt="avatar preview" /> : 'SJ'}
+        </div>
+        <button className="btn btn-outline-secondary btn-sm ms-3" onClick={handleAvatarClick}>
           Change Avatar
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/gif"
+          style={{ display: 'none' }}
+          onChange={handleAvatarUpload}
+        />
         <small className="ms-3 text-muted">JPG, PNG or GIF. Max size 2MB</small>
       </div>
+      {showAvatarViewer && avatar && (
+        <div className="avatar-viewer-overlay" onClick={() => setShowAvatarViewer(false)}>
+          <div className="avatar-viewer-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="avatar-viewer-close"
+              aria-label="Close avatar preview"
+              onClick={() => setShowAvatarViewer(false)}
+            >
+              <FiX size={18} />
+            </button>
+            <img src={avatar} alt="Full avatar" />
+            <button
+              className="btn btn-dark btn-sm mt-3"
+              onClick={() => setShowAvatarViewer(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="form-row">
         <div className="form-group mb-3" style={{ flex: 1, marginRight: '12px' }}>
@@ -341,11 +445,20 @@ function NotificationsSection() {
 
 // ============ Appearance Section ============
 function AppearanceSection() {
-  const [appearance, setAppearance] = useState({
-    theme: 'light',
-    language: 'english',
-    sidebarDensity: 'comfortable',
-    showProjectIcons: true
+  const [appearance, setAppearance] = useState(() => {
+    const savedTheme = localStorage.getItem('theme') || 'light'
+    const savedAppearanceRaw = localStorage.getItem('appearanceSettings')
+    const savedAppearance = savedAppearanceRaw ? JSON.parse(savedAppearanceRaw) : {}
+
+    return {
+      theme: savedTheme,
+      language: savedAppearance.language || 'english',
+      sidebarDensity: savedAppearance.sidebarDensity || 'comfortable',
+      showProjectIcons:
+        typeof savedAppearance.showProjectIcons === 'boolean'
+          ? savedAppearance.showProjectIcons
+          : true
+    }
   })
 
   const handleChange = (e) => {
@@ -354,6 +467,13 @@ function AppearanceSection() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+  }
+
+  const handleSaveAppearance = () => {
+    localStorage.setItem('theme', appearance.theme)
+    localStorage.setItem('appearanceSettings', JSON.stringify(appearance))
+    document.documentElement.setAttribute('data-theme', appearance.theme)
+    alert('Appearance saved successfully!')
   }
 
   return (
@@ -417,7 +537,7 @@ function AppearanceSection() {
         </div>
       </div>
 
-      <button className="btn btn-primary btn-dark mt-4">
+      <button className="btn btn-primary btn-dark mt-4" onClick={handleSaveAppearance}>
         Save Appearance
       </button>
     </div>
