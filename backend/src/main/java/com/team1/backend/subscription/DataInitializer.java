@@ -8,11 +8,13 @@ import com.team1.backend.subscription.repository.PlanRepository;
 import com.team1.backend.subscription.repository.SubscriptionRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 
 @Component
+@Profile("dev")
 public class DataInitializer implements ApplicationRunner {
 
     private final PlanRepository planRepository;
