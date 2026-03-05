@@ -3,7 +3,7 @@ import './Subscription.css'
 import './Dashboard.css'
 import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX, FiRepeat } from 'react-icons/fi'
 import { GiCrown } from 'react-icons/gi'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function Subscription() {
   const navigate = useNavigate()
@@ -19,6 +19,32 @@ export default function Subscription() {
   const [modalPlan, setModalPlan] = useState(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card')
   const [upiCopied, setUpiCopied] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Your invoice INV-2024-002 is ready', time: '3m ago', read: false },
+    { id: 2, title: 'Professional plan renewal in 2 days', time: '40m ago', read: false },
+    { id: 3, title: 'Payment method updated successfully', time: '1h ago', read: true }
+  ])
+  const notificationRef = useRef(null)
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  const toggleNotifications = () => setShowNotifications(prev => !prev)
+  const markAsRead = (id) => {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)))
+  }
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
 
   function handleLogout() {
     localStorage.removeItem('user')
@@ -109,7 +135,7 @@ export default function Subscription() {
 
       {/* mobile toggle button (same as Dashboard) */}
       <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
-        <FiMenu size={18} />
+        <FiMenu size={24} />
       </button>
 
       <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
@@ -123,9 +149,35 @@ export default function Subscription() {
                   <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
                 </div>
 
-                <button className="btn btn-link me-2 bell-black" title="Notifications">
-                  <FiBell size={20} />
-                </button>
+                <div className="notification-wrapper me-2" ref={notificationRef}>
+                  <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications}>
+                    <FiBell size={20} />
+                    {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+                  </button>
+
+                  {showNotifications && (
+                    <div className="notification-dropdown">
+                      <div className="notification-header">
+                        <span>Notifications</span>
+                        {unreadCount > 0 && (
+                          <button className="mark-all-btn" onClick={markAllAsRead}>Mark all read</button>
+                        )}
+                      </div>
+                      <div className="notification-list">
+                        {notifications.map((n) => (
+                          <button
+                            key={n.id}
+                            className={`notification-item-row ${n.read ? 'read' : 'unread'}`}
+                            onClick={() => markAsRead(n.id)}
+                          >
+                            <div className="notification-title">{n.title}</div>
+                            <div className="notification-time">{n.time}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <button className="btn create-issue-medium dark" onClick={() => navigate('/create-issue')}>
                   <FiPlus className="me-1" /> Create Issue

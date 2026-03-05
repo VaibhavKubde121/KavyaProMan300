@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import {
   FiGrid,
@@ -35,6 +35,13 @@ const Reports = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("velocity");
   const [selectedProject, setSelectedProject] = useState("KavyaProMan 360");
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: "Sprint 3 report is ready to review.", time: "2 min ago", read: false },
+    { id: 2, title: "2 issues moved to In Progress.", time: "18 min ago", read: false },
+    { id: 3, title: "Weekly analytics summary generated.", time: "1 hour ago", read: true },
+  ]);
+  const notificationRef = useRef(null);
 
   const projects = [
     "KavyaProMan 360",
@@ -88,6 +95,28 @@ const Reports = () => {
   ];
 
   const COLORS = ["#f4b400", "#0969da", "#2da44e"];
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(item => ({ ...item, read: true })));
+  };
+
+  const markNotificationAsRead = (id) => {
+    setNotifications(prev =>
+      prev.map(item => (item.id === id ? { ...item, read: true } : item))
+    );
+  };
 
   return (
     <div className="dashboard-root d-flex">
@@ -127,7 +156,41 @@ const Reports = () => {
             <input className="form-control" placeholder="Search issues, projects..." />
           </div>
 
-          <button className="btn btn-link me-2"><FiBell size={20} /></button>
+          <div className="notification-wrapper me-2" ref={notificationRef}>
+            <button
+              className="btn btn-link bell-black"
+              onClick={() => setShowNotifications(prev => !prev)}
+              aria-label="Toggle notifications"
+              type="button"
+            >
+              <FiBell size={20} />
+            </button>
+            {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+
+            {showNotifications && (
+              <div className="notification-dropdown">
+                <div className="notification-header">
+                  <span>Notifications</span>
+                  <button className="mark-all-btn" onClick={markAllAsRead} type="button">
+                    Mark all as read
+                  </button>
+                </div>
+                <div className="notification-list">
+                  {notifications.map(item => (
+                    <button
+                      key={item.id}
+                      className={`notification-item-row ${item.read ? "" : "unread"}`.trim()}
+                      onClick={() => markNotificationAsRead(item.id)}
+                      type="button"
+                    >
+                      <div className="notification-title">{item.title}</div>
+                      <div className="notification-time">{item.time}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <button className="btn create-issue-medium" onClick={() => navigate("/create-issue")}>
             <FiPlus /> Create Issue

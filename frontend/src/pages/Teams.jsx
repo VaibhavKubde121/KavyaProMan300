@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom'
 import "./Teams.css";
 import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiX, FiCheck, FiRepeat, FiArrowRight } from 'react-icons/fi'
@@ -25,8 +25,16 @@ export default function Teams() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("All Roles");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: "New member request pending approval", time: "5m ago", read: false },
+    { id: 2, title: "Role updated for Sarah Johnson", time: "25m ago", read: false },
+    { id: 3, title: "Weekly team summary generated", time: "1h ago", read: true }
+  ]);
   const [editingId, setEditingId] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
+  const notificationRef = useRef(null);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const [inviteFormData, setInviteFormData] = useState({
     name: '',
@@ -41,6 +49,31 @@ export default function Teams() {
     fetchTeamMembers();
     fetchTeamStats();
   }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const toggleNotifications = () => {
+    setShowNotifications((prev) => !prev);
+  };
+
+  const markAsRead = (id) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
 
   const fetchTeamMembers = async () => {
     try {
@@ -326,9 +359,38 @@ export default function Teams() {
                     <input className="form-control" placeholder="Search issues, projects..." />
                   </div>
 
-                  <button className="btn btn-link me-2 bell-black" title="Notifications">
-                    <FiBell size={20} />
-                  </button>
+                  <div className="notification-wrapper me-2" ref={notificationRef}>
+                    <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications}>
+                      <FiBell size={20} />
+                      {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+                    </button>
+
+                    {showNotifications && (
+                      <div className="notification-dropdown">
+                        <div className="notification-header">
+                          <span>Notifications</span>
+                          {unreadCount > 0 && (
+                            <button className="mark-all-btn" onClick={markAllAsRead}>
+                              Mark all read
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="notification-list">
+                          {notifications.map((n) => (
+                            <button
+                              key={n.id}
+                              className={`notification-item-row ${n.read ? "read" : "unread"}`}
+                              onClick={() => markAsRead(n.id)}
+                            >
+                              <div className="notification-title">{n.title}</div>
+                              <div className="notification-time">{n.time}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   <button className="btn create-issue-medium" onClick={() => navigate('/create-issue')}>
                     <FiPlus className="me-1" /> Create Issue
