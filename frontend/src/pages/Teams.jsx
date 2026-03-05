@@ -10,6 +10,13 @@ export default function Teams() {
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [selectedOrg, setSelectedOrg] = useState(() => { try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null } })
+
+  useEffect(() => {
+    function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
 
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState({
@@ -41,6 +48,17 @@ export default function Teams() {
     fetchTeamMembers();
     fetchTeamStats();
   }, []);
+
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
 
   const fetchTeamMembers = async () => {
     try {
@@ -238,9 +256,9 @@ export default function Teams() {
         </div>
 
         <div className="org-switch mt-3 d-flex align-items-center gap-2">
-          <div className="org-icon">K</div>
+          <div className="org-icon">{selectedOrg?.name ? selectedOrg.name.charAt(0) : 'K'}</div>
           <div className="org-info">
-            <div className="org-name">Kavya Technologies</div>
+            <div className="org-name">{selectedOrg?.name || 'Kavya Technologies'}</div>
             <button className="switch-org-btn mt-1" onClick={() => navigate('/organization')} aria-label="Switch Organization">
               <span className="switch-left"><FiRepeat size={16} className="me-2" /></span>
               <span className="switch-text">Switch Organization</span>
@@ -307,7 +325,7 @@ export default function Teams() {
       {/* removed separate floating toggle; single toggle button below handles both sizes */}
 
       {/* Mobile Toggle (also toggles collapsed on large screens) */}
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 

@@ -10,7 +10,9 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+  const [selectedOrg, setSelectedOrg] = useState(() => {
+    try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null }
+  })
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
@@ -20,6 +22,29 @@ export default function Dashboard() {
   useEffect(() => {
     const stored = localStorage.getItem('userAvatar')
     if (stored) setAvatar(stored)
+  }, [])
+
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
+
+  // listen for organization changes
+  useEffect(() => {
+    function onOrgChanged(e){
+      const org = e?.detail || null
+      setSelectedOrg(org)
+      try { if (org) localStorage.setItem('org', JSON.stringify(org)) }
+      catch (err) {}
+    }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
   }, [])
   const [project, setProject] = useState('KavyaProMan 360')
   const [issueType, setIssueType] = useState('Story')
@@ -246,7 +271,7 @@ export default function Dashboard() {
       {/* floating toggle (uses same button for large and small screens) - removed separate floating button */}
 
       {/* mobile toggle (visible on small/medium screens) - also toggles collapsed on large screens */}
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 
@@ -533,14 +558,14 @@ export default function Dashboard() {
 
             <div className="saved-inner-grid">
               <div className="inner-filter-card">
-                <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
+                <div className="inner-content" onClick={() => navigate('/all-my-issues?difficulty=High')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=High') }}>
                   <div>
                     <h6>High Priority Tasks</h6>
                     <p className="filter-desc">All high and highest priority tasks</p>
                   </div>
 
                   <div className="filter-actions-row">
-                    <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
+                    <button className="apply-btn" onClick={() => navigate('/all-my-issues?difficulty=High')}><FiFilter className="me-2" />Apply</button>
                     <div className="icons-row">
                       <button className="icon-btn" title="Share"><FiShare2 /></button>
                       <button className="icon-btn" title="Download"><FiDownload /></button>
@@ -598,9 +623,15 @@ export default function Dashboard() {
               <h3 className="stat-title">{totalIssues}</h3>
 
               <div className="issues-legend">
-                <div className="legend-row"><span className="dot dot-red"/> High <span className="legend-count">{difficultyCounts.High}</span></div>
-                <div className="legend-row"><span className="dot dot-orange"/> Medium <span className="legend-count">{difficultyCounts.Medium}</span></div>
-                <div className="legend-row"><span className="dot dot-green"/> Low <span className="legend-count">{difficultyCounts.Low}</span></div>
+                <div className="legend-row clickable" onClick={() => navigate('/all-my-issues?difficulty=High')} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=High') }}>
+                  <span className="dot dot-red"/> High <span className="legend-count">{difficultyCounts.High}</span>
+                </div>
+                <div className="legend-row clickable" onClick={() => navigate('/all-my-issues?difficulty=Medium')} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=Medium') }}>
+                  <span className="dot dot-orange"/> Medium <span className="legend-count">{difficultyCounts.Medium}</span>
+                </div>
+                <div className="legend-row clickable" onClick={() => navigate('/all-my-issues?difficulty=Low')} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=Low') }}>
+                  <span className="dot dot-green"/> Low <span className="legend-count">{difficultyCounts.Low}</span>
+                </div>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   FiGrid,
   FiFolder,
@@ -40,7 +40,13 @@ export default function Settings() {
   const navigate = useNavigate()
 
   // placeholders for values that would normally come from context or props
-  const selectedOrg = { name: '' }
+  const [selectedOrg, setSelectedOrg] = useState(() => { try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null } })
+  useEffect(() => {
+    function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
+
 const user = JSON.parse(localStorage.getItem('user') || 'null')
 const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const handleLogout = () => {
@@ -130,7 +136,7 @@ const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Gue
       )}
 
       {/* mobile toggle (visible on small/medium screens) */}
-      <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed(s => !s)} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 

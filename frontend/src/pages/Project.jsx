@@ -77,7 +77,9 @@ export default function Project() {
   const navigate = useNavigate()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+  const [selectedOrg, setSelectedOrg] = useState(() => {
+    try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null }
+  })
   const [projects, setProjects] = useState(PROJECTS)
   const [collapsed, setCollapsed] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -110,6 +112,18 @@ export default function Project() {
     document.addEventListener('click', handleDocumentClick)
     return () => document.removeEventListener('click', handleDocumentClick)
   }, [openProjectMenuId])
+
+  // listen for organization changes
+  useEffect(() => {
+    function onOrgChanged(e){
+      const org = e?.detail || null
+      setSelectedOrg(org)
+      try { if (org) localStorage.setItem('org', JSON.stringify(org)) }
+      catch (err) {}
+    }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
 
   function handleLogout() {
     localStorage.removeItem('user')
@@ -517,6 +531,11 @@ export default function Project() {
           </div>
         </div>
       </aside>
+
+      {/* mobile toggle button (delegated to global SidebarController) */}
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
+        <FiMenu size={18} />
+      </button>
 
       {collapsed && (
         <div className="topbar d-flex align-items-center px-3">
