@@ -8,6 +8,7 @@ import {
   FiCreditCard,
   FiSettings,
   FiLogOut,
+  FiMenu,
   FiSearch,
   FiBell,
   FiPlus,
@@ -15,6 +16,7 @@ import {
   FiTarget,
   FiClock,
   FiActivity,
+  FiX,
 } from "react-icons/fi";
 import {
   BarChart,
@@ -34,6 +36,10 @@ import "./Dashboard.css";
 const Reports = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("velocity");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [topSearchText, setTopSearchText] = useState("");
   const [selectedProject, setSelectedProject] = useState("KavyaProMan 360");
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
@@ -118,11 +124,21 @@ const Reports = () => {
     );
   };
 
+  const toggleSidebarForScreen = () => {
+    if (typeof window !== "undefined" && window.innerWidth >= 992) {
+      setCollapsed(prev => !prev);
+    } else {
+      setMobileOpen(prev => !prev);
+    }
+  };
+
+  const isMobileScreen = () => typeof window !== "undefined" && window.innerWidth <= 768;
+
   return (
     <div className="dashboard-root d-flex">
 
       {/* ===== SIDEBAR SAME AS BEFORE ===== */}
-      <aside className="sidebar d-flex flex-column">
+      <aside className={`sidebar d-flex flex-column ${collapsed ? "collapsed" : ""} ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-top">
           <div className="brand">
             <div className="brand-logo">KP</div>
@@ -146,14 +162,46 @@ const Reports = () => {
         </div>
       </aside>
 
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar" type="button">
+        <FiMenu size={18} />
+      </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? "show" : ""}`} onClick={() => setMobileOpen(false)} />
+
       {/* ===== MAIN CONTENT ===== */}
       <main className="content flex-grow-1 p-4">
 
         {/* ===== TOP SEARCH ===== */}
-        <div className="top-search-row mb-4">
-          <div className="input-group top-search-medium">
+        <div className={`top-search-row mb-4 ${mobileSearchOpen ? "mobile-search-open" : ""}`}>
+          <div
+            className={`input-group top-search-medium ${mobileSearchOpen ? "mobile-open" : ""}`}
+            onClick={() => {
+              if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true);
+            }}
+          >
             <span className="input-group-text"><FiSearch /></span>
-            <input className="form-control" placeholder="Search issues, projects..." />
+            <input
+              className="form-control"
+              placeholder="Search issues, projects..."
+              value={topSearchText}
+              onChange={(e) => setTopSearchText(e.target.value)}
+              onFocus={() => {
+                if (isMobileScreen()) setMobileSearchOpen(true);
+              }}
+            />
+            {mobileSearchOpen && (
+              <button
+                type="button"
+                className="reports-search-close"
+                aria-label="Close search"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setMobileSearchOpen(false);
+                }}
+              >
+                <FiX size={16} />
+              </button>
+            )}
           </div>
 
           <div className="notification-wrapper me-2" ref={notificationRef}>

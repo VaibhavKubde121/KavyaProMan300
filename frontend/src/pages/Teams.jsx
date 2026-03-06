@@ -4,6 +4,25 @@ import "./Teams.css";
 import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiX, FiCheck, FiRepeat, FiArrowRight } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
 
+const FALLBACK_MEMBERS = [
+  { id: 1, name: 'Sarah Johnson', email: 'sarah.johnson@kavyapro.com', role: 'Admin', projects: 3, activeIssues: 8, image: 'https://randomuser.me/api/portraits/women/44.jpg' },
+  { id: 2, name: 'Michael Chen', email: 'michael.chen@kavyapro.com', role: 'Developer', projects: 2, activeIssues: 6, image: 'https://randomuser.me/api/portraits/men/32.jpg' },
+  { id: 3, name: 'Emily Rodriguez', email: 'emily.rodriguez@kavyapro.com', role: 'Tester', projects: 2, activeIssues: 4, image: 'https://randomuser.me/api/portraits/women/65.jpg' }
+];
+
+function calculateStats(data) {
+  const adminCount = data.filter((m) => m.role === 'Admin').length;
+  const totalIssues = data.reduce((sum, m) => sum + (m.activeIssues || 0), 0);
+  const avgWorkload = data.length > 0 ? Math.round(totalIssues / data.length) : 0;
+
+  return {
+    totalMembers: data.length,
+    activeProjects: 3,
+    avgWorkload,
+    admins: adminCount
+  };
+}
+
 export default function Teams() {
   const navigate = useNavigate()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
@@ -11,21 +30,17 @@ export default function Teams() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const [members, setMembers] = useState([]);
-  const [stats, setStats] = useState({
-    totalMembers: 0,
-    activeProjects: 0,
-    avgWorkload: 0,
-    admins: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [members, setMembers] = useState(FALLBACK_MEMBERS);
+  const [stats, setStats] = useState(calculateStats(FALLBACK_MEMBERS));
+  const [usingFallbackData, setUsingFallbackData] = useState(true);
 
   const [activeTab, setActiveTab] = useState("Members");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("All Roles");
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [topSearchText, setTopSearchText] = useState("");
   const [notifications, setNotifications] = useState([
     { id: 1, title: "New member request pending approval", time: "5m ago", read: false },
     { id: 2, title: "Role updated for Sarah Johnson", time: "25m ago", read: false },
@@ -42,13 +57,16 @@ export default function Teams() {
     role: 'Developer'
   });
 
-  const API_BASE_URL = 'http://localhost:8080/api';
-
+  const API_BASE_URL = (import.meta?.env?.VITE_API_BASE || 'http://localhost:8080');
+  const MEMBERS_API_URL = `${API_BASE_URL}/api/members`;
   // Fetch team members and stats on component mount
   useEffect(() => {
     fetchTeamMembers();
-    fetchTeamStats();
   }, []);
+
+  useEffect(() => {
+    setStats(calculateStats(members));
+  }, [members]);
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -76,43 +94,21 @@ export default function Teams() {
   };
 
   const fetchTeamMembers = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
     try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/members`);
+      const response = await fetch(MEMBERS_API_URL, { signal: controller.signal });
       if (!response.ok) {
         throw new Error('Failed to fetch members');
       }
       const data = await response.json();
-      setMembers(data);
-      setError(null);
+      setMembers(Array.isArray(data) ? data : []);
+      setUsingFallbackData(false);
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching members:', err);
+      setMembers(FALLBACK_MEMBERS);
+      setUsingFallbackData(true);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTeamStats = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/members`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch stats');
-      }
-      const data = await response.json();
-      
-      const adminCount = data.filter(m => m.role === 'Admin').length;
-      const totalIssues = data.reduce((sum, m) => sum + (m.activeIssues || 0), 0);
-      const avgWorkload = data.length > 0 ? Math.round(totalIssues / data.length) : 0;
-
-      setStats({
-        totalMembers: data.length,
-        activeProjects: 3, // You may need to fetch this from a different endpoint
-        avgWorkload: avgWorkload,
-        admins: adminCount
-      });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
+      clearTimeout(timeoutId);
     }
   };
 
@@ -123,7 +119,7 @@ export default function Teams() {
 
   const handleSaveEdit = async (memberId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/members/${memberId}`, {
+      const response = await fetch(`${MEMBERS_API_URL}/${memberId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -141,6 +137,13 @@ export default function Teams() {
       setEditingMember(null);
       alert('Member updated successfully');
     } catch (err) {
+      if (usingFallbackData) {
+        const localUpdatedMember = { ...editingMember, id: memberId };
+        setMembers(members.map(m => m.id === memberId ? localUpdatedMember : m));
+        setEditingId(null);
+        setEditingMember(null);
+        return;
+      }
       alert('Error updating member: ' + err.message);
       console.error('Error:', err);
     }
@@ -169,7 +172,7 @@ export default function Teams() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/members`, {
+      const response = await fetch(MEMBERS_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,9 +188,21 @@ export default function Teams() {
       setMembers([...members, newMember]);
       setShowInviteModal(false);
       setInviteFormData({ name: '', email: '', role: 'Developer' });
-      fetchTeamStats();
       alert('Member invited successfully');
     } catch (err) {
+      if (usingFallbackData) {
+        const localMember = {
+          id: Date.now(),
+          ...inviteFormData,
+          projects: 0,
+          activeIssues: 0,
+          image: 'https://randomuser.me/api/portraits/lego/2.jpg'
+        };
+        setMembers([...members, localMember]);
+        setShowInviteModal(false);
+        setInviteFormData({ name: '', email: '', role: 'Developer' });
+        return;
+      }
       alert('Error inviting member: ' + err.message);
       console.error('Error:', err);
     }
@@ -199,7 +214,7 @@ export default function Teams() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/members/${memberId}`, {
+      const response = await fetch(`${MEMBERS_API_URL}/${memberId}`, {
         method: 'DELETE'
       });
 
@@ -208,9 +223,12 @@ export default function Teams() {
       }
 
       setMembers(members.filter(m => m.id !== memberId));
-      fetchTeamStats();
       alert('Member deleted successfully');
     } catch (err) {
+      if (usingFallbackData) {
+        setMembers(members.filter(m => m.id !== memberId));
+        return;
+      }
       alert('Error deleting member: ' + err.message);
       console.error('Error:', err);
     }
@@ -237,26 +255,8 @@ export default function Teams() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="dashboard-root d-flex">
-        <aside className="sidebar d-flex flex-column">
-          <div className="sidebar-top">
-            <div className="brand d-flex align-items-center">
-              <div className="brand-logo">KP</div>
-              <div className="brand-name">KavyaProMan</div>
-            </div>
-          </div>
-        </aside>
-        <main className="content flex-grow-1 p-4">
-          <div className="team-container">
-            <div style={{ textAlign: 'center', padding: '50px' }}>
-              <h2>Loading...</h2>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 768
   }
 
   return (
@@ -353,10 +353,36 @@ export default function Teams() {
           {/* Header */}
           <div className="team-header">
               <div>
-                <div className="top-search-row mb-3">
-                  <div className="input-group top-search-medium">
+                <div className={`top-search-row mb-3 ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+                  <div
+                    className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+                    onClick={() => {
+                      if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+                    }}
+                  >
                     <span className="input-group-text"><FiSearch /></span>
-                    <input className="form-control" placeholder="Search issues, projects..." />
+                    <input
+                      className="form-control"
+                      placeholder="Search issues, projects..."
+                      value={topSearchText}
+                      onChange={(e) => setTopSearchText(e.target.value)}
+                      onFocus={() => {
+                        if (isMobileScreen()) setMobileSearchOpen(true)
+                      }}
+                    />
+                    {mobileSearchOpen && (
+                      <button
+                        type="button"
+                        className="team-search-close"
+                        aria-label="Close search"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setMobileSearchOpen(false)
+                        }}
+                      >
+                        <FiX size={16} />
+                      </button>
+                    )}
                   </div>
 
                   <div className="notification-wrapper me-2" ref={notificationRef}>
@@ -407,12 +433,6 @@ export default function Teams() {
                 {/* header-actions left intentionally for other right-side controls */}
               </div>
           </div>
-
-          {error && (
-            <div className="alert alert-danger" role="alert">
-              Error: {error}
-            </div>
-          )}
 
           {/* Invite action above stats */}
           <div className="stats-actions">

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import './Dashboard.css'
 import './Backlog.css'
@@ -123,15 +123,46 @@ export default function Backlog() {
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
   const [collapsed, setCollapsed] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Sprint backlog updated with 2 new tasks', time: '2m ago', read: false },
+    { id: 2, title: 'KPM-5 moved to In Review', time: '15m ago', read: false },
+    { id: 3, title: 'Daily standup starts in 30 minutes', time: '1h ago', read: true }
+  ])
+  const notificationRef = useRef(null)
   const projectFromState = location.state?.project
   const activeProject = projectFromState || {
     id: projectId || 'KPM',
     name: 'KavyaProMan 360'
   }
+  const unreadCount = notifications.filter((item) => !item.read).length
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
 
   function handleLogout() {
     localStorage.removeItem('user')
     navigate('/login', { replace: true })
+  }
+
+  function toggleNotifications() {
+    setShowNotifications((value) => !value)
+  }
+
+  function markNotificationRead(id) {
+    setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)))
+  }
+
+  function markAllNotificationsRead() {
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })))
   }
 
   return (
@@ -222,11 +253,40 @@ export default function Backlog() {
               <input className="form-control" placeholder="Search issues, projects..." aria-label="Search issues and projects" />
             </div>
 
-            <button className="btn btn-link me-2 bell-black" title="Notifications">
-              <FiBell size={20} />
-            </button>
+            <div className="notification-wrapper me-2" ref={notificationRef}>
+              <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications} type="button">
+                <FiBell size={20} />
+              </button>
+              {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
 
-            <button className="btn create-issue-medium">
+              {showNotifications && (
+                <div className="notification-dropdown">
+                  <div className="notification-header">
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <button className="mark-all-btn" type="button" onClick={markAllNotificationsRead}>
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="notification-list">
+                    {notifications.map((item) => (
+                      <button
+                        key={item.id}
+                        className={`notification-item-row ${item.read ? 'read' : 'unread'}`}
+                        onClick={() => markNotificationRead(item.id)}
+                        type="button"
+                      >
+                        <div className="notification-title">{item.title}</div>
+                        <div className="notification-time">{item.time}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button className="btn create-issue-medium" onClick={() => navigate('/create-issue')}>
               <FiPlus className="me-1" /> Create Issue
             </button>
           </div>
@@ -244,10 +304,8 @@ export default function Backlog() {
             <div className="backlog-title-actions">
               <button className="btn backlog-outline-btn" onClick={() => navigate(`/projects/${activeProject.id}/board`, { state: { project: activeProject } })}>
                 View Board
-              </button>
-              <button className="btn create-issue-medium">
-                <FiPlus className="me-1" /> Create Issue
-              </button>
+              </button>  
+              
             </div>
           </div>
 

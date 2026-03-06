@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
 import './Dashboard.css'
 import './Project.css'
@@ -80,6 +80,7 @@ export default function Project() {
   const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
   const [projects, setProjects] = useState(PROJECTS)
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [activeCreateTab, setActiveCreateTab] = useState('Details')
   const [selectedProjectIcon, setSelectedProjectIcon] = useState('🚀')
@@ -91,10 +92,20 @@ export default function Project() {
   const [editingProjectId, setEditingProjectId] = useState(null)
   const [openProjectMenuId, setOpenProjectMenuId] = useState(null)
   const [showArchivedProjects, setShowArchivedProjects] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [searchText, setSearchText] = useState('')
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Project roadmap updated for KavyaProMan 360', time: '3m ago', read: false },
+    { id: 2, title: 'Website Redesign: 2 new issues added', time: '22m ago', read: false },
+    { id: 3, title: 'Mobile App sprint planning scheduled', time: '1h ago', read: true }
+  ])
+  const notificationRef = useRef(null)
   const activeProjects = projects.filter((project) => !project.isArchived)
   const archivedProjects = projects.filter((project) => project.isArchived)
   const visibleProjects = showArchivedProjects ? archivedProjects : activeProjects
   const isSaveDisabled = !projectName.trim() || !projectKey.trim()
+  const unreadCount = notifications.filter((item) => !item.read).length
 
   useEffect(() => {
     if (!openProjectMenuId) {
@@ -110,6 +121,17 @@ export default function Project() {
     document.addEventListener('click', handleDocumentClick)
     return () => document.removeEventListener('click', handleDocumentClick)
   }, [openProjectMenuId])
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
 
   function handleLogout() {
     localStorage.removeItem('user')
@@ -209,6 +231,30 @@ export default function Project() {
   function handleDeleteProject(projectId) {
     setProjects((current) => current.filter((project) => project.id !== projectId))
     setOpenProjectMenuId(null)
+  }
+
+  function toggleNotifications() {
+    setShowNotifications((value) => !value)
+  }
+
+  function markNotificationRead(id) {
+    setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)))
+  }
+
+  function markAllNotificationsRead() {
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })))
+  }
+
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed((value) => !value)
+    } else {
+      setMobileOpen((value) => !value)
+    }
+  }
+
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 768
   }
 
   function renderCreateTabContent() {
@@ -458,7 +504,7 @@ export default function Project() {
 
   return (
     <div className="project-page-root dashboard-root d-flex">
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -532,17 +578,77 @@ export default function Project() {
         </div>
       )}
 
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+        <FiMenu size={18} />
+      </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
+
       <main className={`content project-content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="project-top-strip">
-          <div className="top-search-row">
-            <div className="input-group top-search-medium">
+          <div className={`top-search-row ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+            <div
+              className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+              onClick={() => {
+                if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+              }}
+            >
               <span className="input-group-text"><FiSearch /></span>
-              <input className="form-control" placeholder="Search issues, projects..." aria-label="Search issues and projects" />
+              <input
+                className="form-control"
+                placeholder="Search issues, projects..."
+                aria-label="Search issues and projects"
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                onFocus={() => { if (isMobileScreen()) setMobileSearchOpen(true) }}
+              />
+              {mobileSearchOpen && (
+                <button
+                  type="button"
+                  className="project-search-close"
+                  aria-label="Close search"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setMobileSearchOpen(false)
+                  }}
+                >
+                  <FiX size={16} />
+                </button>
+              )}
             </div>
 
-            <button className="btn btn-link me-2 bell-black" title="Notifications">
-              <FiBell size={20} />
-            </button>
+            <div className="notification-wrapper me-2" ref={notificationRef}>
+              <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications} type="button">
+                <FiBell size={20} />
+              </button>
+              {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+
+              {showNotifications && (
+                <div className="notification-dropdown">
+                  <div className="notification-header">
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <button className="mark-all-btn" onClick={markAllNotificationsRead} type="button">
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="notification-list">
+                    {notifications.map((item) => (
+                      <button
+                        key={item.id}
+                        className={`notification-item-row ${item.read ? 'read' : 'unread'}`}
+                        onClick={() => markNotificationRead(item.id)}
+                        type="button"
+                      >
+                        <div className="notification-title">{item.title}</div>
+                        <div className="notification-time">{item.time}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button className="btn create-issue-medium" onClick={() => navigate('/create-issue')}>
               <FiPlus className="me-1" /> Create Issue

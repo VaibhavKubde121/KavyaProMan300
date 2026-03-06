@@ -13,6 +13,9 @@ import Teams from "./pages/Teams";
 import Project from './pages/Project'
 import Board from './pages/Board'
 import Backlog from './pages/Backlog'
+import Reports from './pages/Reports'
+import Subscription from './pages/Subscription'
+import ContactSales from './pages/ContactSales'
 
 function App() {
   const user = typeof window !== 'undefined' ? localStorage.getItem('user') : null
@@ -27,9 +30,17 @@ function App() {
         <Route path="/customize" element={<CustomizeOrganization />} />
         <Route path="/teams" element={<Teams />} />
         <Route path="/projects" element={<Project />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/subscription" element={<Subscription />} />
+        <Route path="/contact-sales" element={<ContactSales />} />
         <Route path="/projects/:projectId/board" element={<Board />} />
         <Route path="/projects/:projectId/backlog" element={<Backlog />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/create-issue" element={<Dashboard initialShowCreate={true} />} />
+        <Route path="/create-issue/" element={<Dashboard initialShowCreate={true} />} />
+        <Route path="/all-my-issues" element={<AllMyIssues />} />
         <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>
     </BrowserRouter>
   )
