@@ -573,6 +573,72 @@
   .create-issue-medium{min-width:120px;padding:8px 10px;font-size:13px;border-radius:8px;background:#05060a !important;color:#fff !important;border:none !important;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 }
 
+/* Keep Teams top header controls in one line on mobile even if shared CSS overrides later */
+@media (max-width: 768px) {
+  .team-header .top-search-row{
+    align-items:center !important;
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    justify-content:flex-start !important;
+    width:100% !important;
+  }
+
+  .team-header .notification-wrapper,
+  .team-header .create-issue-medium{
+    flex:0 0 auto !important;
+  }
+
+  .team-header .top-search-medium{
+    flex:0 0 44px !important;
+    max-width:44px !important;
+    min-width:44px !important;
+    width:44px !important;
+    cursor:pointer;
+    padding:6px !important;
+  }
+
+  .team-header .top-search-medium .input-group-text{
+    margin:0 auto;
+  }
+
+  .team-header .top-search-medium .form-control{
+    display:none !important;
+    pointer-events:none !important;
+  }
+
+  .team-header .top-search-row.mobile-search-open .top-search-medium{
+    flex:1 1 auto !important;
+    max-width:none !important;
+    min-width:0 !important;
+    width:auto !important;
+    padding:6px 10px !important;
+    cursor:text;
+  }
+
+  .team-header .top-search-row.mobile-search-open .top-search-medium .form-control{
+    display:block !important;
+    pointer-events:auto !important;
+  }
+
+  .team-header .top-search-row.mobile-search-open .notification-wrapper,
+  .team-header .top-search-row.mobile-search-open .create-issue-medium{
+    display:none !important;
+  }
+}
+
+.team-search-close{
+  align-items:center;
+  background:transparent;
+  border:none;
+  color:#6b7280;
+  cursor:pointer;
+  display:inline-flex;
+  justify-content:center;
+  margin-left:6px;
+  padding:0;
+}
+
 .modal-footer {
   padding: 20px 25px;
   border-top: 1px solid #e2e8f0;
@@ -623,4 +689,64 @@
   background: #fee2e2;
   color: #dc2626;
   border: 1px solid #fecaca;
+}
+
+html[data-theme='dark'] .modal-content {
+  background: #000000 !important;
+  border: 1px solid #ffffff !important;
+}
+
+html[data-theme='dark'] .modal-header,
+html[data-theme='dark'] .modal-footer {
+  border-color: #1f2937 !important;
+}
+
+html[data-theme='dark'] .modal-header h2,
+html[data-theme='dark'] .form-group label,
+html[data-theme='dark'] .modal-close {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .modal-close:hover {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .form-group input,
+html[data-theme='dark'] .form-group select {
+  background: #000000 !important;
+  border: 1px solid #374151 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .form-group input::placeholder {
+  color: #9ca3af !important;
+}
+
+html[data-theme='dark'] .btn-cancel,
+html[data-theme='dark'] .btn-invite {
+  background: #000000 !important;
+  border: 1px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .edit-btn {
+  background: #000000 !important;
+  border: 1px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .edit-btn:hover {
+  background: #111827 !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .role.tester {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid #ffffff !important;
+}
+
+html[data-theme='dark'] .member-stat strong {
+  color: #ffffff !important;
 }

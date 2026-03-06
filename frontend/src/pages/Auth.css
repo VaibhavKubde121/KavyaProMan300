@@ -330,6 +330,7 @@ html[data-theme='dark'] .org-url input::placeholder {
   padding: 30px 40px;
   box-sizing: border-box;
   background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  position: relative;
 }
 
 /* HEADER */
@@ -352,8 +353,8 @@ html[data-theme='dark'] .org-url input::placeholder {
 
 .org-list-logout {
   position: absolute;
-  right: 0;
-  top: 0;
+  right: 40px;
+  top: 30px;
   padding: 8px 16px;
   border-radius: 8px;
   border: 1px solid #ffffff;
@@ -540,5 +541,14 @@ html[data-theme='dark'] .org-create-box:hover {
 
   .org-list-title {
     font-size: 30px;
+  }
+
+  .org-list-logout {
+    position: static;
+    display: block;
+    margin: 10px auto 0;
+    width: 100%;
+    max-width: 220px;
+    text-align: center;
   }
 }
