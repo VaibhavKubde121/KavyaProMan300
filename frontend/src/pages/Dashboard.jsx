@@ -741,46 +741,26 @@ export default function Dashboard() {
                       <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
                     </div>
                   </div>
-                ))
-              ) : (
-                <>
-                  <div className="inner-filter-card">
-                    <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
-                      <div>
-                        <h6>High Priority Tasks</h6>
-                        <p className="filter-desc">All high and highest priority tasks</p>
-                      </div>
+                </div>
+              </div>
 
-                      <div className="filter-actions-row">
-                        <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
-                        <div className="icons-row">
-                          <button className="icon-btn" title="Share"><FiShare2 /></button>
-                          <button className="icon-btn" title="Download"><FiDownload /></button>
-                          <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
-                        </div>
-                      </div>
-                    </div>
+              <div className="inner-filter-card">
+                <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
+                  <div>
+                    <h6>My Open Issues <span className="shared-badge">Shared</span></h6>
+                    <p className="filter-desc">Issues assigned to me that are not completed</p>
                   </div>
 
-                  <div className="inner-filter-card">
-                    <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
-                      <div>
-                        <h6>My Open Issues <span className="shared-badge">Shared</span></h6>
-                        <p className="filter-desc">Issues assigned to me that are not completed</p>
-                      </div>
-
-                      <div className="filter-actions-row">
-                        <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
-                        <div className="icons-row">
-                          <button className="icon-btn" title="Share"><FiShare2 /></button>
-                          <button className="icon-btn" title="Download"><FiDownload /></button>
-                          <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
-                        </div>
-                      </div>
+                  <div className="filter-actions-row">
+                    <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
+                    <div className="icons-row">
+                      <button className="icon-btn" title="Share"><FiShare2 /></button>
+                      <button className="icon-btn" title="Download"><FiDownload /></button>
+                      <button className="icon-btn danger" title="Delete"><FiTrash2 /></button>
                     </div>
                   </div>
-                </>
-              )}
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -801,7 +781,7 @@ export default function Dashboard() {
                   <div className="progress-count">0/6</div>
                 </div>
                 <div className="progress-track"><div className="progress-fill" style={{width: '0%'}}></div></div>
-                <div className="time-remaining"><FiClock className="me-2" />-728 days left</div>
+                <div className="time-remaining"><FiClock className="me-2" />{'-728 days left'}</div>
               </div>
             </div>
           </div>

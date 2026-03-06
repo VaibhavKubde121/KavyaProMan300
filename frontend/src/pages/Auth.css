@@ -5,16 +5,44 @@
 .auth-title-main{color:#fff;font-weight:800;text-align:center;margin:0;font-size:48px;letter-spacing:0.5px}
 .auth-subtitle{color:rgba(255,255,255,0.9);margin:0;font-size:18px}
 .auth-card{background:#fff;padding:32px;border-radius:12px;max-width:420px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.15)}
+/* removed forced scrollbar to avoid scrollbars on small forms */
 .auth-card h2{margin:0 0 8px;font-size:28px;text-align:center}
 .auth-card .muted{color:#6b7280;margin-bottom:14px;text-align:center}
 .auth-card label{display:block;margin-top:12px;font-weight:600}
 .auth-card input{width:100%;padding:12px;border-radius:8px;border:1px solid #e6e6e6;margin-top:6px;box-sizing:border-box}
+.auth-card select{width:100%;padding:12px;border-radius:8px;border:1px solid #e6e6e6;margin-top:6px;background:#fff}
+
+/* Custom scrollbar for auth cards */
+.auth-card::-webkit-scrollbar{width:8px}
+.auth-card::-webkit-scrollbar-track{background:transparent}
+.auth-card::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#a78bfa,#7c3aed);border-radius:8px}
+
+/* OTP styles */
+.otp-card{max-width:520px}
+.otp-row{display:flex;gap:10px;justify-content:center;margin:18px 0}
+.otp-box{width:46px;height:56px;border-radius:10px;border:1px solid #e6e6e6;text-align:center;font-size:22px;font-weight:700}
+.otp-box:focus{outline:2px solid rgba(99,102,241,0.25);box-shadow:0 6px 18px rgba(124,58,237,0.12)}
+.otp-box-wrap{position:relative}
+.otp-clear{position:absolute;right:-8px;top:-8px;background:#fff;border-radius:50%;border:1px solid #e6e6e6;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px}
+.otp-clear:hover{background:#f3f4f6}
+
+/* Make register form visually richer */
+.auth-card h2{background:linear-gradient(90deg,#4f46e5,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-btn{background:linear-gradient(90deg,#4f46e5,#7c3aed)}
+.auth-card p{color:#6b7280}
 .password-wrapper{position:relative;width:100%}
 .password-wrapper input{padding-right:48px}
 .password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;padding:6px;width:36px;height:36px;border-radius:6px;cursor:pointer;color:#6b7280;display:flex;align-items:center;justify-content:center}
 .password-toggle svg{width:18px;height:18px}
 .password-toggle:hover{color:#374151}
 .password-toggle:focus{outline:2px solid rgba(59,130,246,0.25);outline-offset:2px}
+
+/* Password rule indicators */
+.pw-rules{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.pw-rule{font-size:13px;color:#ef4444;display:flex;align-items:center;gap:8px}
+.pw-rule.valid{color:#16a34a}
+.pw-rule::before{content:'\2716';display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,0.06)}
+.pw-rule.valid::before{content:'\2713'}
 
 @media (max-width:520px){
 	.password-wrapper{max-width:none;margin-left:0;margin-right:0}

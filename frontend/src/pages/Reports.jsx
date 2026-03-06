@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import {
   FiGrid,
@@ -128,6 +128,15 @@ const Reports = () => {
   ];
 
   const COLORS = ["#f4b400", "#0969da", "#2da44e"];
+  // Notifications state for topbar
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'New report generated: Sprint 5', time: '5m ago', read: false },
+    { id: 2, title: 'Project plan updated', time: '25m ago', read: false },
+    { id: 3, title: 'Export complete', time: '1h ago', read: true }
+  ]);
+  const notificationRef = useRef(null);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {

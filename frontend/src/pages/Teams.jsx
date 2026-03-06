@@ -209,6 +209,31 @@ export default function Teams() {
     }
   };
 
+  // Notification handlers (were missing causing ReferenceError)
+  function toggleNotifications() {
+    setShowNotifications((s) => !s);
+  }
+
+  function markAllAsRead(e) {
+    e && e.stopPropagation && e.stopPropagation();
+    setNotifications((ns) => ns.map((n) => ({ ...n, read: true })));
+  }
+
+  function markAsRead(id) {
+    setNotifications((ns) => ns.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  }
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    function handleClickOutside(ev) {
+      if (notificationRef.current && !notificationRef.current.contains(ev.target)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Filter members based on search and role
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
