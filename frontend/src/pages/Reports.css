@@ -35,6 +35,22 @@
   background: #fff;
 }
 
+/* Styled wrapper for nicer dropdown with caret */
+.project-select-wrapper{
+  position:relative;display:inline-flex;align-items:center;background:linear-gradient(90deg,#fff,#f8fafc);border-radius:14px;padding:6px 8px;border:1px solid rgba(15,23,36,0.06);box-shadow:0 6px 18px rgba(15,23,36,0.04);min-width:220px;max-width:360px
+}
+.project-select-wrapper .project-dropdown{appearance:none;-webkit-appearance:none;border:none;background:transparent;padding:10px 36px 10px 12px;width:100%;font-weight:600}
+.project-select-wrapper .select-caret{position:absolute;right:10px;color:#374151;pointer-events:none;display:flex;align-items:center}
+
+/* Make dropdown compact on small screens */
+@media (max-width: 992px){
+  .project-select-wrapper{width:100%;max-width:320px}
+}
+@media (max-width: 600px){
+  .project-select-wrapper{width:100%;max-width:none}
+  .project-select-wrapper .project-dropdown{padding-right:36px}
+}
+
 /* ===========================
    SUMMARY CARDS (BIGGER)
 =========================== */
@@ -145,15 +161,13 @@
   font-size: 18px;
 }
 
-/* Keep Reports top controls (search, bell, create) in one line on mobile */
-@media (max-width: 768px) {
-  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4 {
-    align-items: center !important;
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    justify-content: flex-start !important;
-    width: 100% !important;
+/* ===== Responsive rules: medium (<=992px) and small (<=600px) ===== */
+@media (max-width: 992px) {
+  .reports-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap:wrap;
   }
 
   .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4 .notification-wrapper,
