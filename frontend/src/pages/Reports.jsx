@@ -13,6 +13,8 @@ import {
   FiBell,
   FiPlus,
   FiTrendingUp,
+  FiRepeat,
+  FiArrowRight,
   FiTarget,
   FiClock,
   FiActivity,
@@ -41,19 +43,49 @@ const Reports = () => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [topSearchText, setTopSearchText] = useState("");
   const [selectedProject, setSelectedProject] = useState("KavyaProMan 360");
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: "Sprint 3 report is ready to review.", time: "2 min ago", read: false },
-    { id: 2, title: "2 issues moved to In Progress.", time: "18 min ago", read: false },
-    { id: 3, title: "Weekly analytics summary generated.", time: "1 hour ago", read: true },
-  ]);
-  const notificationRef = useRef(null);
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+  const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
+  const [selectedOrg, setSelectedOrg] = useState(() => {
+    try {
+      return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+    } catch (e) { return null }
+  })
+  const [avatar, setAvatar] = useState('')
+  useEffect(() => { const stored = localStorage.getItem('userAvatar'); if (stored) setAvatar(stored) }, [])
+
+  // listen for organization changes from OrganizationPage or other parts of app
+  useEffect(() => {
+    function onOrgChanged(e) {
+      const org = e?.detail || null
+      setSelectedOrg(org)
+      try { if (org) localStorage.setItem('org', JSON.stringify(org)) }
+      catch (err) {}
+    }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
+
+  function handleLogout(){ localStorage.removeItem('user'); navigate('/login', { replace:true }) }
 
   const projects = [
     "KavyaProMan 360",
     "Website Redesign",
     "Mobile App",
   ];
+
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
 
   // ===== SAMPLE DATA =====
   const issues = [
@@ -101,6 +133,15 @@ const Reports = () => {
   ];
 
   const COLORS = ["#f4b400", "#0969da", "#2da44e"];
+  // Notifications state for topbar
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'New report generated: Sprint 5', time: '5m ago', read: false },
+    { id: 2, title: 'Project plan updated', time: '25m ago', read: false },
+    { id: 3, title: 'Export complete', time: '1h ago', read: true }
+  ]);
+  const notificationRef = useRef(null);
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
@@ -140,25 +181,61 @@ const Reports = () => {
       {/* ===== SIDEBAR SAME AS BEFORE ===== */}
       <aside className={`sidebar d-flex flex-column ${collapsed ? "collapsed" : ""} ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-top">
-          <div className="brand">
+          <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
             <div className="brand-name">KavyaProMan</div>
           </div>
         </div>
 
-        <nav className="nav flex-column mt-4">
-          <NavLink to="/dashboard" className="nav-item"><FiGrid /> Dashboard</NavLink>
-          <NavLink to="/projects" className="nav-item"><FiFolder /> Projects</NavLink>
-          <NavLink to="/teams" className="nav-item"><FiUsers /> Teams</NavLink>
-          <NavLink to="/reports" className="nav-item active"><FiBarChart2 /> Reports</NavLink>
-          <NavLink to="/subscription" className="nav-item"><FiCreditCard /> Subscription</NavLink>
-          <NavLink to="/settings" className="nav-item"><FiSettings /> Settings</NavLink>
-        </nav>
+        <div className="org-switch mt-3 d-flex align-items-center gap-2">
+          <div className="org-icon">{selectedOrg?.name ? selectedOrg.name.charAt(0) : 'K'}</div>
+          <div className="org-info">
+            <div className="org-name">{selectedOrg?.name || 'Kavya Technologies'}</div>
+            <button className="switch-org-btn mt-1" onClick={() => navigate('/organization')} aria-label="Switch Organization">
+              <span className="switch-left"><FiRepeat size={16} className="me-2" /></span>
+              <span className="switch-text">Switch Organization</span>
+              <FiArrowRight size={16} className="switch-arrow" />
+            </button>
+          </div>
+        </div>
 
-        <div className="mt-auto p-3">
-          <button className="btn logout-badge">
-            <FiLogOut /> Logout
-          </button>
+        <div className="sidebar-inner d-flex flex-column mt-3">
+          <div className="nav-scroll">
+            <nav className="nav flex-column">
+              <NavLink to="/dashboard" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiGrid className="me-3 nav-icon"/> <span className="nav-text">Dashboard</span>
+              </NavLink>
+              <NavLink to="/projects" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiFolder className="me-3 nav-icon"/> <span className="nav-text">Projects</span>
+              </NavLink>
+              <NavLink to="/teams" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiUsers className="me-3 nav-icon"/> <span className="nav-text">Teams</span>
+              </NavLink>
+              <NavLink to="/reports" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiBarChart2 className="me-3 nav-icon"/> <span className="nav-text">Reports</span>
+              </NavLink>
+              <NavLink to="/subscription" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiCreditCard className="me-3 nav-icon"/> <span className="nav-text">Subscription</span>
+              </NavLink>
+              <NavLink to="/settings" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiSettings className="me-3 nav-icon"/> <span className="nav-text">Settings</span>
+              </NavLink>
+            </nav>
+          </div>
+
+          <div className="sidebar-footer mt-3 d-flex flex-column align-items-start">
+            <div className="profile d-flex align-items-center w-100">
+              <div className="avatar-icon">{avatar ? <img src={avatar} alt="avatar" /> : <FiUser size={20} />}</div>
+              <div className="ms-2 user-info">
+                <div className="user-name">{displayName}</div>
+                <div className="user-role">Admin</div>
+              </div>
+            </div>
+            <button className="btn logout-badge mt-3" onClick={handleLogout} title="Logout">
+              <FiLogOut size={16} className="me-2" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
 

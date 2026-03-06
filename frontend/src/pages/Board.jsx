@@ -139,7 +139,12 @@ export default function Board() {
   const { projectId } = useParams()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+  const [selectedOrg, setSelectedOrg] = useState(() => { try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null } })
+  useEffect(() => {
+    function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
   const [collapsed, setCollapsed] = useState(false)
   const createEmptyFilters = () => ({
     status: [],
@@ -333,7 +338,7 @@ export default function Board() {
         </div>
       )}
 
-      <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed((value) => !value)} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 

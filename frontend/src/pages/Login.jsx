@@ -6,6 +6,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [pendingUserId, setPendingUserId] = useState(localStorage.getItem('pendingUserId') || '')
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
@@ -20,6 +21,17 @@ export default function Login() {
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.message || 'Login failed')
+
+      // If OTP was sent, navigate to verify page (always expected now)
+      if (body.message === 'OTP sent to email') {
+        localStorage.setItem('pendingUserId', body.userId)
+        localStorage.setItem('pendingFlow', 'login')
+        setPendingUserId(body.userId)
+        alert('A verification code has been sent to your email. Please enter it to complete login.')
+        navigate('/verify-otp')
+        return
+      }
+
       // store returned name if available; fall back to email
       const userToStore = { id: body.userId, email: body.email }
       if (body.name) userToStore.name = body.name
@@ -30,6 +42,8 @@ export default function Login() {
       setError(err.message)
     }
   }
+
+  // Note: OTP verification is handled on the dedicated /verify-otp page
 
   return (
     <div className="auth-root">
@@ -79,7 +93,7 @@ export default function Login() {
           </button>
         </div>
         <div className="auth-row">
-          <a className="muted" href="#">Forgot password?</a>
+          <a className="muted" href="/forgot-password">Forgot password?</a>
         </div>
         <button className="auth-btn" type="submit">Sign In</button>
         <div className="divider">Or continue with</div>

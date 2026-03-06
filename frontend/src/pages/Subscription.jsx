@@ -3,13 +3,15 @@ import './Subscription.css'
 import './Dashboard.css'
 import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX, FiRepeat } from 'react-icons/fi'
 import { GiCrown } from 'react-icons/gi'
-import { useEffect, useRef, useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function Subscription() {
   const navigate = useNavigate()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+  const [selectedOrg, setSelectedOrg] = useState(() => {
+    try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null }
+  })
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [period, setPeriod] = useState('monthly')
@@ -62,6 +64,29 @@ export default function Subscription() {
   ]
 
   function toggleFaq(i) { setOpenFaq(prev => prev === i ? null : i) }
+
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
+
+  // listen for organization changes
+  useEffect(() => {
+    function onOrgChanged(e){
+      const org = e?.detail || null
+      setSelectedOrg(org)
+      try { if (org) localStorage.setItem('org', JSON.stringify(org)) }
+      catch (err) {}
+    }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
 
   function toggleSidebarForScreen() {
     if (typeof window !== 'undefined' && window.innerWidth >= 992) {
@@ -134,8 +159,8 @@ export default function Subscription() {
       </aside>
 
       {/* mobile toggle button (same as Dashboard) */}
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
-        <FiMenu size={24} />
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
+        <FiMenu size={18} />
       </button>
 
       <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
