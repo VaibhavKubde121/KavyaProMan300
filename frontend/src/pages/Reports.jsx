@@ -8,7 +8,7 @@ import {
   FiCreditCard,
   FiSettings,
   FiLogOut,
-  FiUser,
+  FiMenu,
   FiSearch,
   FiBell,
   FiPlus,
@@ -18,6 +18,7 @@ import {
   FiTarget,
   FiClock,
   FiActivity,
+  FiX,
 } from "react-icons/fi";
 import {
   BarChart,
@@ -37,6 +38,10 @@ import "./Dashboard.css";
 const Reports = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("velocity");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [topSearchText, setTopSearchText] = useState("");
   const [selectedProject, setSelectedProject] = useState("KavyaProMan 360");
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -160,11 +165,21 @@ const Reports = () => {
     );
   };
 
+  const toggleSidebarForScreen = () => {
+    if (typeof window !== "undefined" && window.innerWidth >= 992) {
+      setCollapsed(prev => !prev);
+    } else {
+      setMobileOpen(prev => !prev);
+    }
+  };
+
+  const isMobileScreen = () => typeof window !== "undefined" && window.innerWidth <= 768;
+
   return (
     <div className="dashboard-root d-flex">
 
-      {/* ===== SIDEBAR (match Dashboard) ===== */}
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
+      {/* ===== SIDEBAR SAME AS BEFORE ===== */}
+      <aside className={`sidebar d-flex flex-column ${collapsed ? "collapsed" : ""} ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -224,35 +239,46 @@ const Reports = () => {
         </div>
       </aside>
 
-      {/* topbar shown when sidebar is collapsed */}
-      {collapsed && (
-        <div className="topbar d-flex align-items-center px-3">
-          <div className="d-flex align-items-center">
-            <div className="brand-logo">KP</div>
-            <div className="ms-2 brand-name">KavyaProMan</div>
-          </div>
-          <div className="ms-auto">
-            <button className="btn btn-sm btn-link" onClick={() => setCollapsed(false)} aria-label="Open sidebar">
-              {/* menu icon */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* mobile toggle button (delegated to global SidebarController) */}
-      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar" type="button">
+        <FiMenu size={18} />
       </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? "show" : ""}`} onClick={() => setMobileOpen(false)} />
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="content flex-grow-1 p-4">
 
         {/* ===== TOP SEARCH ===== */}
-        <div className="top-search-row mb-4">
-          <div className="input-group top-search-medium">
+        <div className={`top-search-row mb-4 ${mobileSearchOpen ? "mobile-search-open" : ""}`}>
+          <div
+            className={`input-group top-search-medium ${mobileSearchOpen ? "mobile-open" : ""}`}
+            onClick={() => {
+              if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true);
+            }}
+          >
             <span className="input-group-text"><FiSearch /></span>
-            <input className="form-control" placeholder="Search issues, projects..." />
+            <input
+              className="form-control"
+              placeholder="Search issues, projects..."
+              value={topSearchText}
+              onChange={(e) => setTopSearchText(e.target.value)}
+              onFocus={() => {
+                if (isMobileScreen()) setMobileSearchOpen(true);
+              }}
+            />
+            {mobileSearchOpen && (
+              <button
+                type="button"
+                className="reports-search-close"
+                aria-label="Close search"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setMobileSearchOpen(false);
+                }}
+              >
+                <FiX size={16} />
+              </button>
+            )}
           </div>
 
           <div className="notification-wrapper me-2" ref={notificationRef}>

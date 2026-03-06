@@ -1,13 +1,14 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './Dashboard.css'
 import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiShare2, FiDownload, FiTrash2, FiFilter, FiBookmark, FiClock, FiRepeat, FiArrowRight, FiUpload, FiAlignLeft, FiAlignCenter, FiAlignRight, FiAlignJustify } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
 
-export default function Dashboard() {
+export default function Dashboard({ initialShowCreate = false }) {
   const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
   const navigate = useNavigate()
+  const location = useLocation()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const [selectedOrg, setSelectedOrg] = useState(() => {
@@ -16,8 +17,10 @@ export default function Dashboard() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [showCreate, setShowCreate] = useState(false)
+  const [showCreate, setShowCreate] = useState(initialShowCreate)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [topSearchText, setTopSearchText] = useState('')
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Issue KPM-7 assigned to you', time: '2m ago', read: false },
     { id: 2, title: 'Sprint planning starts in 30 minutes', time: '15m ago', read: false },
@@ -63,7 +66,7 @@ export default function Dashboard() {
     issueType: [],
     sprint: [],
     priority: [],
-    assignee: [],
+    assignee: [], 
     project: [],
     dueFrom: '',
     dueTo: ''
@@ -248,6 +251,10 @@ export default function Dashboard() {
     }
   }
 
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 768
+  }
+
   function toggleFilterSelection(group, value) {
     setSelectedFilters((prev) => {
       const exists = prev[group].includes(value)
@@ -314,6 +321,13 @@ export default function Dashboard() {
       localStorage.setItem('dashboardSavedFilters', JSON.stringify(updated))
     } catch (err) {
       console.error('failed to delete saved filter', err)
+    }
+  }
+
+  function closeCreateModal() {
+    setShowCreate(false)
+    if (location.pathname === '/create-issue') {
+      navigate('/dashboard', { replace: true })
     }
   }
 
@@ -411,10 +425,37 @@ export default function Dashboard() {
       <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="dash-header mb-4">
           <div>
-            <div className="top-search-row mb-3">
-              <div className="input-group top-search-medium">
+            <div className={`top-search-row mb-3 ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+              <div
+                className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+                onClick={() => {
+                  if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+                }}
+              >
                 <span className="input-group-text"><FiSearch /></span>
-                <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
+                <input
+                  className="form-control"
+                  placeholder="Search issues, projects..."
+                  aria-label="Search projects and issues"
+                  value={topSearchText}
+                  onChange={(event) => setTopSearchText(event.target.value)}
+                  onFocus={() => {
+                    if (isMobileScreen()) setMobileSearchOpen(true)
+                  }}
+                />
+                {mobileSearchOpen && (
+                  <button
+                    type="button"
+                    className="dashboard-search-close"
+                    aria-label="Close search"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMobileSearchOpen(false)
+                    }}
+                  >
+                    <FiX size={16} />
+                  </button>
+                )}
               </div>
 
               <div className="notification-wrapper me-2" ref={notificationRef}>
@@ -580,13 +621,13 @@ export default function Dashboard() {
         )}
 
         {showCreate && (
-          <div className="create-issue-overlay" onClick={() => setShowCreate(false)}>
+          <div className="create-issue-overlay" onClick={closeCreateModal}>
             <div className="create-issue-container" role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}>
               <div className="create-issue-header d-flex align-items-center">
                 <h4>Create issue</h4>
                 <div className="ms-auto d-flex gap-2">
                   <button className="btn btn-sm btn-outline-secondary">Import issues</button>
-                  <button className="btn btn-link modal-close" onClick={() => setShowCreate(false)} title="Close"><FiX size={18} /></button>
+                  <button className="btn btn-link modal-close" onClick={closeCreateModal} title="Close"><FiX size={18} /></button>
                 </div>
               </div>
 
@@ -705,7 +746,13 @@ export default function Dashboard() {
                       <span className="ms-2">Create another</span>
                     </label> */}
 
-                    <button type="button" className="btn btn-outline-secondary cancel-btn" onClick={() => setShowCreate(false)}>Cancel</button>
+                    <button
+                      type="button"
+                      className="btn cancel-btn cancel-btn-danger"
+                      onClick={closeCreateModal}
+                    >
+                      Cancel
+                    </button>
 
                     <button type="button" className="btn btn-primary create-btn" onClick={handleCreate} disabled={Object.values(errors).some(v => v)}>Create</button>
                   </div>

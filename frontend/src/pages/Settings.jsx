@@ -35,6 +35,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 export default function Settings() {
   // basic UI state
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('notifications')
 
   // router helper
@@ -56,9 +57,17 @@ const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Gue
     navigate('/login')
   }
 
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed(s => !s)
+    } else {
+      setMobileOpen(s => !s)
+    }
+  }
+
   return (
     <div className="dashboard-root d-flex">
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -137,9 +146,11 @@ const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Gue
       )}
 
       {/* mobile toggle (visible on small/medium screens) */}
-      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
 
             {/*sidebar end  */}
 
@@ -263,6 +274,16 @@ function ProfileSection() {
     setShowAvatarViewer(true)
   }
 
+  const handleRemoveAvatar = () => {
+    setAvatar('')
+    setShowAvatarViewer(false)
+    localStorage.removeItem('userAvatar')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+    alert('Avatar removed successfully!')
+  }
+
   const handleSave = () => {
     localStorage.setItem('profileSettings', JSON.stringify(formData))
 
@@ -297,6 +318,9 @@ function ProfileSection() {
         </div>
         <button className="btn btn-outline-secondary btn-sm ms-3" onClick={handleAvatarClick}>
           Change Avatar
+        </button>
+        <button className="btn btn-outline-danger btn-sm ms-2" onClick={handleRemoveAvatar} disabled={!avatar}>
+          Remove Avatar
         </button>
         <input
           ref={fileInputRef}
