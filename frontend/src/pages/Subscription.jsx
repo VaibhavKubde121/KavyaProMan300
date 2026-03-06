@@ -4,6 +4,7 @@ import './Dashboard.css'
 import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX, FiRepeat } from 'react-icons/fi'
 import { GiCrown } from 'react-icons/gi'
 import { useState } from 'react'
+import useNotificationCount from '../hooks/useNotificationCount'
 
 export default function Subscription() {
   const navigate = useNavigate()
@@ -19,6 +20,7 @@ export default function Subscription() {
   const [modalPlan, setModalPlan] = useState(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card')
   const [upiCopied, setUpiCopied] = useState(false)
+  const notificationCount = useNotificationCount()
 
   function handleLogout() {
     localStorage.removeItem('user')
@@ -123,7 +125,7 @@ export default function Subscription() {
                   <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
                 </div>
 
-                <button className="btn btn-link me-2 bell-black" title="Notifications">
+                <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
                   <FiBell size={20} />
                 </button>
 

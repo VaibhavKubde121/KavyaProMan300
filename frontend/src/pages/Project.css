@@ -29,26 +29,49 @@
 }
 
 .project-top-strip .bell-black {
-  align-items: center;
-  border-radius: 10px;
+  align-items: center !important;
+  background: #edeff2 !important;
+  border: none !important;
+  border-radius: 0 !important;
   color: #111827 !important;
-  display: inline-flex;
-  height: 40px;
-  justify-content: center;
+  display: inline-flex !important;
+  flex: 0 0 72px !important;
+  height: 56px !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  margin-left: 0 !important;
   margin-right: 0 !important;
-  padding: 0;
-  position: relative;
-  width: 40px;
+  padding: 0 !important;
+  position: relative !important;
+  text-decoration: none !important;
+  width: 72px !important;
+}
+
+.project-top-strip .bell-black svg {
+  height: 22px !important;
+  stroke-width: 2.1 !important;
+  width: 22px !important;
 }
 
 .project-top-strip .bell-black:hover {
-  background: #f3f4f6;
+  background: #e7eaee !important;
 }
 
 .project-top-strip .bell-black::after {
-  box-shadow: 0 0 0 2px #f8f9fb;
-  right: 8px;
-  top: 7px;
+  content: none;
+}
+
+.project-top-strip .bell-black.has-notifications::after {
+  background: #ff5a66 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 0 3px rgba(255, 90, 102, 0.25) !important;
+  content: '' !important;
+  height: 10px !important;
+  left: auto !important;
+  position: absolute !important;
+  right: 20px !important;
+  top: 12px !important;
+  width: 10px !important;
 }
 
 .projects-shell {
@@ -649,6 +672,17 @@
   gap: 10px;
   justify-content: flex-end;
   padding: 12px 16px;
+}
+
+.create-project-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #991b1b;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 16px 12px;
+  padding: 9px 10px;
 }
 
 .create-cancel-btn,

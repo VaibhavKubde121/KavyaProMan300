@@ -85,10 +85,6 @@
   .top-search-medium .input-group-text{background:transparent;border:none;color:#9aa3ad;padding:0 8px;display:flex;align-items:center;justify-content:center}
   .top-search-medium input{display:block;width:100%;border:none;background:transparent;padding:8px 6px;font-size:15px;color:#374151}
 
-  /* bell and red dot spacing */
-  .bell-black{color:#000;position:relative;margin-left:8px;margin-right:6px}
-  .bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
-
   /* create button kept visible and compact to fit the row */
   .create-issue-medium{min-width:140px;padding:8px 12px;font-size:14px;border-radius:8px;background:#05060a;color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 }
@@ -119,9 +115,45 @@
 .top-search-medium .form-control{border:none;background:transparent;padding:8px 6px;font-size:15px;color:#374151}
 .top-search-medium .form-control::placeholder{color:#9ca3af}
 
-/* Bell with red notification dot */
-.bell-black{color:#000 !important;position:relative}
-.bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
+/* Bell with red notification dot (unified across pages) */
+button.bell-black{
+  align-items:center !important;
+  background:#edeff2 !important;
+  border:none !important;
+  border-radius:0 !important;
+  color:#111827 !important;
+  display:inline-flex !important;
+  flex:0 0 72px !important;
+  height:56px !important;
+  justify-content:center !important;
+  line-height:1 !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  padding:0 !important;
+  position:relative !important;
+  text-decoration:none !important;
+  width:72px !important;
+}
+button.bell-black svg{
+  height:22px !important;
+  stroke-width:2.1 !important;
+  width:22px !important;
+}
+button.bell-black:hover{background:#e7eaee !important}
+button.bell-black:focus-visible{outline:2px solid #cbd5e1;outline-offset:2px}
+button.bell-black::after{content:none}
+button.bell-black.has-notifications::after{
+  background:#ff5a66 !important;
+  border-radius:50% !important;
+  box-shadow:0 0 0 3px rgba(255,90,102,0.25) !important;
+  content:'' !important;
+  height:10px !important;
+  left:auto !important;
+  position:absolute !important;
+  right:20px !important;
+  top:12px !important;
+  width:10px !important;
+}
 
 /* Create Issue button (rounded black) */
 .create-issue-medium{background:#05060a !important;color:#fff !important;border:none !important;min-width:180px;padding:10px 18px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}

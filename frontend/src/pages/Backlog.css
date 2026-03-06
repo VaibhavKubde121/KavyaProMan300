@@ -12,6 +12,52 @@
   padding-bottom: 16px;
 }
 
+.backlog-top-strip .bell-black {
+  align-items: center !important;
+  background: #edeff2 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: #111827 !important;
+  display: inline-flex !important;
+  flex: 0 0 72px !important;
+  height: 56px !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+  text-decoration: none !important;
+  width: 72px !important;
+}
+
+.backlog-top-strip .bell-black svg {
+  height: 22px !important;
+  stroke-width: 2.1 !important;
+  width: 22px !important;
+}
+
+.backlog-top-strip .bell-black:hover {
+  background: #e7eaee !important;
+}
+
+.backlog-top-strip .bell-black::after {
+  content: none;
+}
+
+.backlog-top-strip .bell-black.has-notifications::after {
+  background: #ff5a66 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 0 3px rgba(255, 90, 102, 0.25) !important;
+  content: '' !important;
+  height: 10px !important;
+  left: auto !important;
+  position: absolute !important;
+  right: 20px !important;
+  top: 12px !important;
+  width: 10px !important;
+}
+
 .backlog-shell {
   display: flex;
   flex-direction: column;
@@ -128,6 +174,20 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px 16px 16px;
+}
+
+.backlog-inline-empty {
+  align-items: center;
+  background: #ffffff;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  color: #6b7280;
+  display: flex;
+  font-size: 14px;
+  justify-content: center;
+  min-height: 80px;
+  padding: 10px;
+  text-align: center;
 }
 
 .backlog-issue-row {

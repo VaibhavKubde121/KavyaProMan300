@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, NavLink } from 'react-router-dom'
 import './Dashboard.css'
 import './Project.css'
+import useNotificationCount from '../hooks/useNotificationCount'
 import {
   FiGrid,
   FiFolder,
@@ -27,7 +28,7 @@ import {
   FiInfo
 } from 'react-icons/fi'
 
-const PROJECTS = [
+const DEFAULT_PROJECTS = [
   {
     id: 'KPM',
     icon: '🚀',
@@ -37,7 +38,12 @@ const PROJECTS = [
     totalIssues: 10,
     teamLead: 'Sarah Johnson',
     createdOn: '15/1/2024',
-    isArchived: false
+    isArchived: false,
+    projectType: 'Scrum',
+    isPrivate: true,
+    members: ['Sarah Johnson', 'Michael Chen', 'Emily Rodriguez'],
+    initialVersion: 'v1.0.0',
+    releasePlan: 'Core features and board workflow rollout'
   },
   {
     id: 'WEB',
@@ -48,7 +54,12 @@ const PROJECTS = [
     totalIssues: 0,
     teamLead: 'Michael Chen',
     createdOn: '1/2/2024',
-    isArchived: false
+    isArchived: false,
+    projectType: 'Kanban',
+    isPrivate: false,
+    members: ['Michael Chen', 'David Kim'],
+    initialVersion: 'v0.1.0',
+    releasePlan: 'Design system and public launch'
   },
   {
     id: 'MOB',
@@ -59,7 +70,12 @@ const PROJECTS = [
     totalIssues: 0,
     teamLead: 'Emily Rodriguez',
     createdOn: '20/1/2024',
-    isArchived: false
+    isArchived: false,
+    projectType: 'Scrum',
+    isPrivate: true,
+    members: ['Emily Rodriguez', 'Sarah Johnson'],
+    initialVersion: 'v0.0.1',
+    releasePlan: 'MVP delivery for Android and iOS'
   }
 ]
 
@@ -72,14 +88,156 @@ const CREATE_TABS = [
 ]
 
 const AVAILABLE_ICONS = ['🚀', '💼', '📱', '🎨', '⚙️', '🏗️', '🔬', '📊', '🎯', '💡', '💥', '🔥']
+const CLOSED_STATUSES = new Set(['done', 'closed', 'completed', 'resolved'])
+
+function safeJsonParse(raw, fallback) {
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+function getStoredJson(key, fallback) {
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return fallback
+  }
+
+  return safeJsonParse(raw, fallback)
+}
+
+function setStoredJson(key, value) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  localStorage.setItem(key, JSON.stringify(value))
+}
+
+function formatCreatedOn(date) {
+  return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+}
+
+function normalizeProjectKey(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 10)
+}
+
+function normalizeText(value) {
+  return String(value || '').toLowerCase().trim()
+}
+
+function normalizeBoolean(value, fallback) {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === 'true') {
+      return true
+    }
+    if (normalized === 'false') {
+      return false
+    }
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0
+  }
+
+  return fallback
+}
+
+function buildStorageKey(selectedOrg) {
+  const rawToken = selectedOrg?.id || selectedOrg?.username || selectedOrg?.name || 'default'
+  const safeToken = String(rawToken).toLowerCase().replace(/[^a-z0-9]+/g, '_')
+  return `kpm_projects_${safeToken}`
+}
+
+function normalizeProject(project, fallbackLead) {
+  return {
+    id: normalizeProjectKey(project?.id || ''),
+    icon: project?.icon || '🚀',
+    name: (project?.name || '').trim(),
+    description: (project?.description || '').trim() || 'No description provided',
+    completedIssues: Number.isFinite(project?.completedIssues) ? project.completedIssues : 0,
+    totalIssues: Number.isFinite(project?.totalIssues) ? project.totalIssues : 0,
+    teamLead: (project?.teamLead || fallbackLead || 'Unassigned').trim(),
+    createdOn: project?.createdOn || formatCreatedOn(new Date()),
+    isArchived: normalizeBoolean(project?.isArchived, false),
+    projectType: project?.projectType === 'Kanban' ? 'Kanban' : 'Scrum',
+    isPrivate: normalizeBoolean(project?.isPrivate, true),
+    members: Array.isArray(project?.members) ? project.members.filter(Boolean) : [],
+    initialVersion: (project?.initialVersion || '').trim(),
+    releasePlan: (project?.releasePlan || '').trim()
+  }
+}
+
+function resolveProjectId(projectText, projects) {
+  const normalized = normalizeText(projectText)
+  if (!normalized) {
+    return null
+  }
+
+  for (const project of projects) {
+    const key = normalizeText(project.id)
+    const name = normalizeText(project.name)
+    if (
+      normalized === key ||
+      normalized === name ||
+      normalized.includes(`(${key})`) ||
+      normalized.startsWith(`${key}-`) ||
+      normalized.includes(name)
+    ) {
+      return project.id
+    }
+  }
+
+  return null
+}
+
+function buildIssueCountMap(issues, projects) {
+  const map = {}
+  issues.forEach((issue) => {
+    const projectId = resolveProjectId(issue?.project, projects)
+    if (!projectId) {
+      return
+    }
+
+    if (!map[projectId]) {
+      map[projectId] = { total: 0, completed: 0 }
+    }
+
+    map[projectId].total += 1
+    const status = normalizeText(issue?.status)
+    if (CLOSED_STATUSES.has(status)) {
+      map[projectId].completed += 1
+    }
+  })
+  return map
+}
 
 export default function Project() {
+  const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
   const navigate = useNavigate()
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+  const user = typeof window !== 'undefined' ? getStoredJson('user', null) : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
-  const [projects, setProjects] = useState(PROJECTS)
+  const selectedOrg = typeof window !== 'undefined' ? getStoredJson('org', null) : null
+  const projectStorageKey = useMemo(() => buildStorageKey(selectedOrg), [selectedOrg])
+
+  const [projects, setProjects] = useState([])
+  const [issueCounts, setIssueCounts] = useState({})
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [activeCreateTab, setActiveCreateTab] = useState('Details')
   const [selectedProjectIcon, setSelectedProjectIcon] = useState('🚀')
@@ -87,14 +245,40 @@ export default function Project() {
   const [projectName, setProjectName] = useState('')
   const [projectKey, setProjectKey] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
+  const [projectLead, setProjectLead] = useState(displayName)
+  const [projectMembers, setProjectMembers] = useState('')
+  const [initialVersion, setInitialVersion] = useState('')
+  const [releasePlan, setReleasePlan] = useState('')
   const [isPrivateProject, setIsPrivateProject] = useState(true)
   const [editingProjectId, setEditingProjectId] = useState(null)
   const [openProjectMenuId, setOpenProjectMenuId] = useState(null)
   const [showArchivedProjects, setShowArchivedProjects] = useState(false)
-  const activeProjects = projects.filter((project) => !project.isArchived)
-  const archivedProjects = projects.filter((project) => project.isArchived)
-  const visibleProjects = showArchivedProjects ? archivedProjects : activeProjects
-  const isSaveDisabled = !projectName.trim() || !projectKey.trim()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [formError, setFormError] = useState('')
+  const notificationCount = useNotificationCount()
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { replace: true })
+    }
+  }, [user, navigate])
+
+  useEffect(() => {
+    const stored = getStoredJson(projectStorageKey, null)
+    if (Array.isArray(stored) && stored.length > 0) {
+      setProjects(stored.map((item) => normalizeProject(item, displayName)))
+      return
+    }
+
+    setProjects(DEFAULT_PROJECTS.map((item) => normalizeProject(item, displayName)))
+  }, [projectStorageKey, displayName])
+
+  useEffect(() => {
+    if (projects.length === 0) {
+      return
+    }
+    setStoredJson(projectStorageKey, projects)
+  }, [projectStorageKey, projects])
 
   useEffect(() => {
     if (!openProjectMenuId) {
@@ -111,9 +295,72 @@ export default function Project() {
     return () => document.removeEventListener('click', handleDocumentClick)
   }, [openProjectMenuId])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadIssueCounts() {
+      let issues = []
+      try {
+        const response = await fetch(`${API_BASE}/api/issues`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch issues')
+        }
+        issues = await response.json()
+      } catch {
+        issues = getStoredJson('myIssues', [])
+      }
+
+      if (!cancelled) {
+        setIssueCounts(buildIssueCountMap(Array.isArray(issues) ? issues : [], projects))
+      }
+    }
+
+    if (projects.length > 0) {
+      loadIssueCounts()
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [API_BASE, projects])
+
+  const activeProjects = useMemo(() => projects.filter((project) => !project.isArchived), [projects])
+  const archivedProjects = useMemo(() => projects.filter((project) => project.isArchived), [projects])
+
+  const visibleProjects = useMemo(
+    () => (showArchivedProjects ? archivedProjects : activeProjects),
+    [showArchivedProjects, archivedProjects, activeProjects]
+  )
+
+  const filteredProjects = useMemo(() => {
+    const query = normalizeText(searchQuery)
+    if (!query) {
+      return visibleProjects
+    }
+
+    return visibleProjects.filter((project) => (
+      normalizeText(project.name).includes(query) ||
+      normalizeText(project.id).includes(query) ||
+      normalizeText(project.description).includes(query) ||
+      normalizeText(project.teamLead).includes(query) ||
+      normalizeText(project.projectType).includes(query)
+    ))
+  }, [searchQuery, visibleProjects])
+
+  const normalizedProjectKey = normalizeProjectKey(projectKey)
+  const isSaveDisabled = !projectName.trim() || normalizedProjectKey.length < 2
+
   function handleLogout() {
     localStorage.removeItem('user')
     navigate('/login', { replace: true })
+  }
+
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed((value) => !value)
+    } else {
+      setMobileOpen((value) => !value)
+    }
   }
 
   function resetCreateForm() {
@@ -123,8 +370,13 @@ export default function Project() {
     setProjectName('')
     setProjectKey('')
     setProjectDescription('')
+    setProjectLead(displayName)
+    setProjectMembers('')
+    setInitialVersion('')
+    setReleasePlan('')
     setIsPrivateProject(true)
     setEditingProjectId(null)
+    setFormError('')
   }
 
   function handleOpenCreateModal() {
@@ -137,16 +389,26 @@ export default function Project() {
     resetCreateForm()
   }
 
-  function formatCreatedOn(date) {
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
-  }
-
   function handleSaveProject() {
     const normalizedName = projectName.trim()
-    const normalizedKeyBase = projectKey.trim().toUpperCase()
+    const normalizedKeyBase = normalizeProjectKey(projectKey)
     const normalizedDescription = projectDescription.trim()
+    const normalizedLead = projectLead.trim() || displayName
+    const memberList = projectMembers
+      .split(',')
+      .map((member) => member.trim())
+      .filter(Boolean)
 
-    if (!normalizedName || !normalizedKeyBase) {
+    setFormError('')
+
+    if (!normalizedName) {
+      setFormError('Project name is required.')
+      return
+    }
+
+    if (normalizedKeyBase.length < 2) {
+      setFormError('Project key must be 2-10 characters using letters and numbers.')
+      setActiveCreateTab('Details')
       return
     }
 
@@ -155,7 +417,9 @@ export default function Project() {
       let suffix = 1
 
       while (current.some((project) => project.id === uniqueKey && project.id !== editingProjectId)) {
-        uniqueKey = `${normalizedKeyBase}${suffix}`
+        const suffixText = String(suffix)
+        const maxBaseLength = Math.max(2, 10 - suffixText.length)
+        uniqueKey = `${normalizedKeyBase.slice(0, maxBaseLength)}${suffixText}`
         suffix += 1
       }
 
@@ -168,24 +432,33 @@ export default function Project() {
                 icon: selectedProjectIcon,
                 name: normalizedName,
                 description: normalizedDescription || 'No description provided',
-                projectType: selectedProjectType
+                teamLead: normalizedLead,
+                projectType: selectedProjectType,
+                isPrivate: isPrivateProject,
+                members: memberList,
+                initialVersion: initialVersion.trim(),
+                releasePlan: releasePlan.trim()
               }
             : project
         ))
       }
 
-      const nextProject = {
+      const nextProject = normalizeProject({
         id: uniqueKey,
         icon: selectedProjectIcon,
         name: normalizedName,
-        description: normalizedDescription || 'No description provided',
+        description: normalizedDescription,
         completedIssues: 0,
         totalIssues: 0,
-        teamLead: displayName,
+        teamLead: normalizedLead,
         createdOn: formatCreatedOn(new Date()),
         isArchived: false,
-        projectType: selectedProjectType
-      }
+        projectType: selectedProjectType,
+        isPrivate: isPrivateProject,
+        members: memberList,
+        initialVersion: initialVersion.trim(),
+        releasePlan: releasePlan.trim()
+      }, displayName)
 
       return [nextProject, ...current]
     })
@@ -202,12 +475,33 @@ export default function Project() {
     setProjectName(project.name || '')
     setProjectKey(project.id || '')
     setProjectDescription(project.description || '')
+    setProjectLead(project.teamLead || displayName)
+    setProjectMembers(Array.isArray(project.members) ? project.members.join(', ') : '')
+    setInitialVersion(project.initialVersion || '')
+    setReleasePlan(project.releasePlan || '')
+    setIsPrivateProject(typeof project.isPrivate === 'boolean' ? project.isPrivate : true)
+    setFormError('')
     setShowCreateModal(true)
     setOpenProjectMenuId(null)
   }
 
   function handleDeleteProject(projectId) {
-    setProjects((current) => current.filter((project) => project.id !== projectId))
+    const project = projects.find((item) => item.id === projectId)
+    const ok = window.confirm(`Delete project "${project?.name || projectId}"? This cannot be undone.`)
+    if (!ok) {
+      return
+    }
+
+    setProjects((current) => current.filter((item) => item.id !== projectId))
+    setOpenProjectMenuId(null)
+  }
+
+  function handleToggleArchive(projectId) {
+    setProjects((current) => current.map((project) => (
+      project.id === projectId
+        ? { ...project, isArchived: !project.isArchived }
+        : project
+    )))
     setOpenProjectMenuId(null)
   }
 
@@ -217,22 +511,30 @@ export default function Project() {
         <>
           <div className="create-field-block">
             <label>
-              Project Lead
+              Project Lead <span>*</span>
             </label>
-            <button className="project-lead-pill">
-              <span className="project-lead-avatar">SJ</span>
-              <span>Sarah Johnson</span>
-            </button>
+            <input
+              className="create-project-input"
+              placeholder="Project lead name"
+              value={projectLead}
+              onChange={(event) => setProjectLead(event.target.value)}
+            />
             <p className="create-input-hint">Set a lead who can guide delivery and ownership.</p>
           </div>
 
-          <div className="create-field-block">
+          <div className="create-field-block create-field-block-full">
             <div className="project-settings-card">
               <div className="project-settings-title">
                 <FiUsers size={14} />
                 <span>Team Members</span>
               </div>
-              <p className="create-input-hint">Add and manage members for this project in this module.</p>
+              <textarea
+                className="create-project-textarea"
+                placeholder="Add members separated by commas"
+                value={projectMembers}
+                onChange={(event) => setProjectMembers(event.target.value)}
+              />
+              <p className="create-input-hint">Example: Sarah Johnson, Michael Chen, Emily Rodriguez</p>
             </div>
           </div>
         </>
@@ -248,6 +550,7 @@ export default function Project() {
             </label>
             <div className="project-type-grid">
               <button
+                type="button"
                 className={`project-type-card ${selectedProjectType === 'Scrum' ? 'selected' : ''}`}
                 onClick={() => setSelectedProjectType('Scrum')}
               >
@@ -256,6 +559,7 @@ export default function Project() {
                 <p>Sprint-based development</p>
               </button>
               <button
+                type="button"
                 className={`project-type-card ${selectedProjectType === 'Kanban' ? 'selected' : ''}`}
                 onClick={() => setSelectedProjectType('Kanban')}
               >
@@ -278,6 +582,7 @@ export default function Project() {
                   <p>Only members can view</p>
                 </div>
                 <button
+                  type="button"
                   className={`project-private-toggle ${isPrivateProject ? 'on' : ''}`}
                   onClick={() => setIsPrivateProject((value) => !value)}
                   aria-label="Toggle private project"
@@ -313,6 +618,8 @@ export default function Project() {
             <input
               className="create-project-input"
               placeholder="e.g., v1.0.0"
+              value={initialVersion}
+              onChange={(event) => setInitialVersion(event.target.value)}
             />
             <p className="create-input-hint">Define the first version for this project.</p>
           </div>
@@ -342,6 +649,8 @@ export default function Project() {
             <textarea
               className="create-project-textarea"
               placeholder="Outline release goals, scope, and target timeline..."
+              value={releasePlan}
+              onChange={(event) => setReleasePlan(event.target.value)}
             />
           </div>
 
@@ -369,6 +678,7 @@ export default function Project() {
           <div className="create-icon-grid">
             {AVAILABLE_ICONS.map((icon) => (
               <button
+                type="button"
                 key={icon}
                 className={`create-icon-btn ${selectedProjectIcon === icon ? 'selected' : ''}`}
                 onClick={() => setSelectedProjectIcon(icon)}
@@ -385,6 +695,7 @@ export default function Project() {
           </label>
           <div className="project-type-grid">
             <button
+              type="button"
               className={`project-type-card ${selectedProjectType === 'Scrum' ? 'selected' : ''}`}
               onClick={() => setSelectedProjectType('Scrum')}
             >
@@ -393,6 +704,7 @@ export default function Project() {
               <p>Sprint-based development</p>
             </button>
             <button
+              type="button"
               className={`project-type-card ${selectedProjectType === 'Kanban' ? 'selected' : ''}`}
               onClick={() => setSelectedProjectType('Kanban')}
             >
@@ -421,12 +733,12 @@ export default function Project() {
           </label>
           <input
             className="create-project-input"
-            placeholder="E.G., MAD"
+            placeholder="e.g., MAD"
             value={projectKey}
-            onChange={(event) => setProjectKey(event.target.value.toUpperCase())}
+            onChange={(event) => setProjectKey(normalizeProjectKey(event.target.value))}
             maxLength={10}
           />
-          <p className="create-input-hint">Short identifier for this project (2-10 characters)</p>
+          <p className="create-input-hint">Short identifier for this project (2-10 letters or numbers)</p>
         </div>
 
         <div className="create-field-block create-field-block-full">
@@ -448,7 +760,7 @@ export default function Project() {
             </div>
             <div>
               <h5>Project Key</h5>
-              <p>The project key will be used for all issues (e.g., KEY-123)</p>
+              <p>The project key will be used for all issues (e.g., KEY-123).</p>
             </div>
           </div>
         </div>
@@ -458,7 +770,7 @@ export default function Project() {
 
   return (
     <div className="project-page-root dashboard-root d-flex">
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -532,19 +844,31 @@ export default function Project() {
         </div>
       )}
 
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+        <FiMenu size={18} />
+      </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
+
       <main className={`content project-content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="project-top-strip">
           <div className="top-search-row">
             <div className="input-group top-search-medium">
               <span className="input-group-text"><FiSearch /></span>
-              <input className="form-control" placeholder="Search issues, projects..." aria-label="Search issues and projects" />
+              <input
+                className="form-control"
+                placeholder="Search projects by name, key, lead, type..."
+                aria-label="Search projects"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
             </div>
 
-            <button className="btn btn-link me-2 bell-black" title="Notifications">
+            <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
               <FiBell size={20} />
             </button>
 
-            <button className="btn create-issue-medium" onClick={() => navigate('/create-issue')}>
+            <button className="btn create-issue-medium" onClick={() => navigate('/dashboard')}>
               <FiPlus className="me-1" /> Create Issue
             </button>
           </div>
@@ -570,16 +894,25 @@ export default function Project() {
 
           <div className="projects-banner">
             <span className="projects-banner-dot" />
-            <span>Showing {visibleProjects.length} {showArchivedProjects ? 'archived' : 'active'} projects</span>
+            <span>
+              Showing {filteredProjects.length} of {visibleProjects.length} {showArchivedProjects ? 'archived' : 'active'} projects
+            </span>
           </div>
 
           <div className="projects-grid">
-            {visibleProjects.length === 0 ? (
+            {filteredProjects.length === 0 ? (
               <div className="projects-empty-state">
-                {showArchivedProjects ? 'No archived projects available right now.' : 'No active projects available right now.'}
+                {searchQuery.trim()
+                  ? 'No projects matched your search.'
+                  : showArchivedProjects
+                    ? 'No archived projects available right now.'
+                    : 'No active projects available right now.'}
               </div>
-            ) : visibleProjects.map((project) => {
-              const progress = project.totalIssues > 0 ? (project.completedIssues / project.totalIssues) * 100 : 0
+            ) : filteredProjects.map((project) => {
+              const issueSummary = issueCounts[project.id]
+              const completedIssues = issueSummary ? issueSummary.completed : project.completedIssues
+              const totalIssues = issueSummary ? issueSummary.total : project.totalIssues
+              const progress = totalIssues > 0 ? Math.min(100, (completedIssues / totalIssues) * 100) : 0
 
               return (
                 <article className="project-card-panel" key={project.id}>
@@ -606,6 +939,9 @@ export default function Project() {
                       {openProjectMenuId === project.id ? (
                         <div className="project-menu-dropdown" role="menu" aria-label={`Actions for ${project.name}`}>
                           <button className="project-menu-item" onClick={() => handleEditProject(project)}>Edit</button>
+                          <button className="project-menu-item" onClick={() => handleToggleArchive(project.id)}>
+                            {project.isArchived ? 'Unarchive' : 'Archive'}
+                          </button>
                           <button className="project-menu-item danger" onClick={() => handleDeleteProject(project.id)}>Delete</button>
                         </div>
                       ) : null}
@@ -616,7 +952,7 @@ export default function Project() {
 
                   <div className="project-progress-head">
                     <span>Progress</span>
-                    <strong>{project.completedIssues}/{project.totalIssues} issues</strong>
+                    <strong>{completedIssues}/{totalIssues} issues</strong>
                   </div>
                   <div className="project-progress-track">
                     <div className="project-progress-fill" style={{ width: `${progress}%` }} />
@@ -629,6 +965,10 @@ export default function Project() {
                   <div className="project-meta-row">
                     <FiCalendar size={15} />
                     <span>Created {project.createdOn}</span>
+                  </div>
+                  <div className="project-meta-row">
+                    <FiGitBranch size={15} />
+                    <span>{project.projectType} • {project.isPrivate ? 'Private' : 'Public'}</span>
                   </div>
 
                   <div className="project-card-actions">
@@ -650,7 +990,12 @@ export default function Project() {
                 <h2>{editingProjectId ? 'Edit Project' : 'Create New Project'}</h2>
                 <p>{editingProjectId ? 'Update project details and workflow settings' : 'Set up a new project with team members and workflow'}</p>
               </div>
-              <button className="create-project-close" onClick={handleCloseCreateModal} aria-label="Close create project dialog">
+              <button
+                type="button"
+                className="create-project-close"
+                onClick={handleCloseCreateModal}
+                aria-label="Close create project dialog"
+              >
                 <FiX size={18} />
               </button>
             </div>
@@ -660,6 +1005,7 @@ export default function Project() {
                 const TabIcon = tab.icon
                 return (
                   <button
+                    type="button"
                     key={tab.key}
                     className={`create-tab-btn ${activeCreateTab === tab.key ? 'active' : ''}`}
                     onClick={() => setActiveCreateTab(tab.key)}
@@ -675,9 +1021,13 @@ export default function Project() {
               {renderCreateTabContent()}
             </div>
 
+            {formError ? (
+              <div className="create-project-error" role="alert">{formError}</div>
+            ) : null}
+
             <div className="create-project-footer">
-              <button className="create-cancel-btn" onClick={handleCloseCreateModal}>Cancel</button>
-              <button className="create-save-btn" onClick={handleSaveProject} disabled={isSaveDisabled}>
+              <button type="button" className="create-cancel-btn" onClick={handleCloseCreateModal}>Cancel</button>
+              <button type="button" className="create-save-btn" onClick={handleSaveProject} disabled={isSaveDisabled}>
                 {editingProjectId ? 'Save Changes' : 'Create Project'}
               </button>
             </div>

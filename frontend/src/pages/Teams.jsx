@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import "./Teams.css";
 import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiX, FiCheck, FiRepeat, FiArrowRight } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
+import useNotificationCount from '../hooks/useNotificationCount'
 
 export default function Teams() {
   const navigate = useNavigate()
@@ -10,6 +11,7 @@ export default function Teams() {
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const notificationCount = useNotificationCount()
 
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState({
@@ -326,7 +328,7 @@ export default function Teams() {
                     <input className="form-control" placeholder="Search issues, projects..." />
                   </div>
 
-                  <button className="btn btn-link me-2 bell-black" title="Notifications">
+                  <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
                     <FiBell size={20} />
                   </button>
 

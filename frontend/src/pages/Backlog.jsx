@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import './Dashboard.css'
 import './Backlog.css'
+import useNotificationCount from '../hooks/useNotificationCount'
 import {
   FiGrid,
   FiFolder,
@@ -24,71 +25,120 @@ import {
   FiZap
 } from 'react-icons/fi'
 
-const ACTIVE_SPRINT_ISSUES = [
-  {
-    id: 'KPM-2',
-    type: 'story',
-    title: 'Implement Kanban board with drag and drop',
-    labels: ['frontend', 'core'],
-    points: 13,
-    assignee: 'Michael Chen'
-  },
-  {
-    id: 'KPM-3',
-    type: 'story',
-    title: 'Add sprint planning interface',
-    labels: ['frontend', 'sprints'],
-    points: 5,
-    assignee: 'Emily Rodriguez'
-  },
-  {
-    id: 'KPM-4',
-    type: 'bug',
-    title: 'Bug: Filter not working on board view',
-    labels: ['bug', 'frontend'],
-    points: 2,
-    assignee: 'Sarah Johnson'
-  },
-  {
-    id: 'KPM-5',
-    type: 'task',
-    title: 'Setup authentication system',
-    labels: ['backend', 'security'],
-    points: 8,
-    assignee: 'David Kim'
-  },
-  {
-    id: 'KPM-9',
-    type: 'task',
-    title: 'Optimize database queries',
-    labels: ['backend', 'performance'],
-    points: 5,
-    assignee: 'Michael Chen'
-  }
-]
+const DONE_STATUSES = new Set(['done', 'closed', 'completed', 'resolved'])
+const ACTIVE_STATUSES = new Set(['progress', 'in progress', 'review', 'in review'])
 
-const UPCOMING_BACKLOG_ISSUES = [
-  {
-    id: 'KPM-6',
-    type: 'story',
-    title: 'Create reporting dashboard',
-    labels: ['frontend', 'analytics'],
-    points: 13
-  },
-  {
-    id: 'KPM-7',
-    type: 'story',
-    title: 'Implement notifications system',
-    labels: ['backend', 'notifications'],
-    points: 8
-  },
-  {
-    id: 'KPM-8',
-    type: 'spike',
-    title: 'Add custom workflows',
-    labels: ['core', 'workflows']
+function safeJsonParse(raw, fallback) {
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed ?? fallback
+  } catch {
+    return fallback
   }
-]
+}
+
+function getStoredJson(key, fallback) {
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return fallback
+  }
+
+  return safeJsonParse(raw, fallback)
+}
+
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function normalizeProjectKey(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 10)
+}
+
+function buildStorageKey(selectedOrg) {
+  const rawToken = selectedOrg?.id || selectedOrg?.username || selectedOrg?.name || 'default'
+  const safeToken = String(rawToken).toLowerCase().replace(/[^a-z0-9]+/g, '_')
+  return `kpm_projects_${safeToken}`
+}
+
+function resolveProjectId(projectText, projects) {
+  const normalized = normalizeText(projectText)
+  if (!normalized) {
+    return null
+  }
+
+  for (const project of projects) {
+    const key = normalizeText(project?.id)
+    const name = normalizeText(project?.name)
+    if (
+      normalized === key ||
+      normalized === name ||
+      normalized.includes(`(${key})`) ||
+      normalized.startsWith(`${key}-`) ||
+      normalized.includes(name)
+    ) {
+      return project.id
+    }
+  }
+
+  return null
+}
+
+function normalizeIssueType(value) {
+  const normalized = normalizeText(value)
+  if (normalized === 'bug') {
+    return 'bug'
+  }
+  if (normalized === 'story') {
+    return 'story'
+  }
+  if (normalized === 'spike') {
+    return 'spike'
+  }
+  return 'task'
+}
+
+function getIssuePoints(issue) {
+  const difficulty = normalizeText(issue?.difficulty)
+  if (difficulty === 'high') {
+    return 8
+  }
+  if (difficulty === 'medium') {
+    return 5
+  }
+  if (difficulty === 'low') {
+    return 3
+  }
+  return 2
+}
+
+function buildIssueKey(issue, projectId, index) {
+  const rawId = String(issue?.id || '').trim()
+  if (/^[A-Z0-9]+-\d+$/i.test(rawId)) {
+    return rawId.toUpperCase()
+  }
+  if (/^\d+$/.test(rawId)) {
+    return `${projectId}-${rawId}`
+  }
+  return `${projectId}-${index + 1}`
+}
+
+function resolveStatusBucket(issue) {
+  const status = normalizeText(issue?.status || issue?.state)
+  if (ACTIVE_STATUSES.has(status)) {
+    return 'active'
+  }
+  if (DONE_STATUSES.has(status)) {
+    return 'done'
+  }
+  return 'backlog'
+}
 
 function getInitials(name) {
   return name
@@ -116,17 +166,156 @@ function renderIssueIcon(type) {
 }
 
 export default function Backlog() {
+  const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
   const navigate = useNavigate()
   const location = useLocation()
   const { projectId } = useParams()
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+  const user = typeof window !== 'undefined' ? getStoredJson('user', null) : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+  const selectedOrg = typeof window !== 'undefined' ? getStoredJson('org', null) : null
+  const projectStorageKey = useMemo(() => buildStorageKey(selectedOrg), [selectedOrg])
   const [collapsed, setCollapsed] = useState(false)
+  const [projects, setProjects] = useState([])
+  const [issues, setIssues] = useState([])
+  const [manualActiveIssueIds, setManualActiveIssueIds] = useState([])
+  const notificationCount = useNotificationCount()
   const projectFromState = location.state?.project
-  const activeProject = projectFromState || {
-    id: projectId || 'KPM',
-    name: 'KavyaProMan 360'
+
+  useEffect(() => {
+    const storedProjects = getStoredJson(projectStorageKey, [])
+    setProjects(Array.isArray(storedProjects) ? storedProjects : [])
+  }, [projectStorageKey])
+
+  const activeProject = useMemo(() => {
+    if (projectFromState?.id) {
+      return {
+        ...projectFromState,
+        id: normalizeProjectKey(projectFromState.id),
+        name: projectFromState.name || projectFromState.id
+      }
+    }
+
+    const normalizedRouteId = normalizeProjectKey(projectId || '')
+    const projectFromStorage = projects.find((project) => normalizeProjectKey(project?.id) === normalizedRouteId)
+
+    if (projectFromStorage) {
+      return {
+        ...projectFromStorage,
+        id: normalizeProjectKey(projectFromStorage.id),
+        name: projectFromStorage.name || projectFromStorage.id
+      }
+    }
+
+    return {
+      id: normalizedRouteId || 'KPM',
+      name: normalizedRouteId || 'Project'
+    }
+  }, [projectFromState, projectId, projects])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadIssues() {
+      let allIssues = []
+      try {
+        const response = await fetch(`${API_BASE}/api/issues`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch issues')
+        }
+        allIssues = await response.json()
+      } catch {
+        allIssues = getStoredJson('myIssues', [])
+      }
+
+      const issueList = Array.isArray(allIssues) ? allIssues : []
+      const filtered = issueList.filter((issue) => {
+        const resolvedId = resolveProjectId(issue?.project, projects)
+        if (resolvedId) {
+          return normalizeProjectKey(resolvedId) === activeProject.id
+        }
+
+        const issueProject = normalizeText(issue?.project)
+        return (
+          issueProject === normalizeText(activeProject.id) ||
+          issueProject === normalizeText(activeProject.name)
+        )
+      })
+
+      if (!cancelled) {
+        setIssues(filtered)
+      }
+    }
+
+    if (activeProject?.id) {
+      loadIssues()
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [API_BASE, activeProject.id, activeProject.name, projects])
+
+  const normalizedIssues = useMemo(() => (
+    issues.map((issue, index) => {
+      const type = normalizeIssueType(issue?.issueType || issue?.type)
+      const key = buildIssueKey(issue, activeProject.id, index)
+      const summary = String(issue?.summary || issue?.title || 'Untitled issue').trim()
+      const difficulty = normalizeText(issue?.difficulty)
+      const labels = [type]
+      if (difficulty) {
+        labels.push(difficulty)
+      }
+
+      return {
+        id: key,
+        type,
+        title: summary,
+        labels,
+        points: getIssuePoints(issue),
+        assignee: issue?.creatorName || issue?.assignee || 'Unassigned',
+        statusBucket: resolveStatusBucket(issue)
+      }
+    })
+  ), [issues, activeProject.id])
+
+  const activeSprintIssues = useMemo(() => {
+    const explicitActive = normalizedIssues.filter((issue) => issue.statusBucket === 'active')
+    if (explicitActive.length > 0) {
+      return explicitActive
+    }
+
+    if (manualActiveIssueIds.length > 0) {
+      const manualIds = new Set(manualActiveIssueIds)
+      return normalizedIssues.filter((issue) => manualIds.has(issue.id))
+    }
+
+    return normalizedIssues.slice(0, 5)
+  }, [normalizedIssues, manualActiveIssueIds])
+
+  const upcomingBacklogIssues = useMemo(() => {
+    const explicitBacklog = normalizedIssues.filter((issue) => issue.statusBucket === 'backlog')
+    const activeIds = new Set(activeSprintIssues.map((issue) => issue.id))
+    if (explicitBacklog.length > 0) {
+      return explicitBacklog.filter((issue) => !activeIds.has(issue.id))
+    }
+
+    return normalizedIssues.filter((issue) => !activeIds.has(issue.id))
+  }, [normalizedIssues, activeSprintIssues])
+
+  function handleCreateIssue() {
+    navigate('/dashboard')
+  }
+
+  function handleStartSprint() {
+    if (upcomingBacklogIssues.length === 0) {
+      return
+    }
+
+    setManualActiveIssueIds(upcomingBacklogIssues.slice(0, 5).map((issue) => issue.id))
+  }
+
+  function handleCompleteSprint() {
+    setManualActiveIssueIds([])
   }
 
   function handleLogout() {
@@ -222,11 +411,11 @@ export default function Backlog() {
               <input className="form-control" placeholder="Search issues, projects..." aria-label="Search issues and projects" />
             </div>
 
-            <button className="btn btn-link me-2 bell-black" title="Notifications">
+            <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications" onClick={() => navigate('/all-my-issues')}>
               <FiBell size={20} />
             </button>
 
-            <button className="btn create-issue-medium">
+            <button className="btn create-issue-medium" onClick={handleCreateIssue}>
               <FiPlus className="me-1" /> Create Issue
             </button>
           </div>
@@ -245,7 +434,7 @@ export default function Backlog() {
               <button className="btn backlog-outline-btn" onClick={() => navigate(`/projects/${activeProject.id}/board`, { state: { project: activeProject } })}>
                 View Board
               </button>
-              <button className="btn create-issue-medium">
+              <button className="btn create-issue-medium" onClick={handleCreateIssue}>
                 <FiPlus className="me-1" /> Create Issue
               </button>
             </div>
@@ -257,17 +446,19 @@ export default function Backlog() {
                 <span className="backlog-sprint-icon"><FiPlayCircle size={18} /></span>
                 <div>
                   <div className="backlog-sprint-title-row">
-                    <h2>Sprint 2 - Board Implementation</h2>
+                    <h2>{activeProject.name} - Current Sprint</h2>
                     <span className="backlog-active-pill">ACTIVE</span>
                   </div>
-                  <p>Implement Kanban board and drag-and-drop functionality</p>
+                  <p>{activeSprintIssues.length} active issues for this project.</p>
                 </div>
               </div>
-              <button className="btn backlog-outline-btn">Complete Sprint</button>
+              <button className="btn backlog-outline-btn" onClick={handleCompleteSprint}>Complete Sprint</button>
             </div>
 
             <div className="backlog-issue-list">
-              {ACTIVE_SPRINT_ISSUES.map((issue) => (
+              {activeSprintIssues.length === 0 ? (
+                <div className="backlog-inline-empty">No active sprint issues yet.</div>
+              ) : activeSprintIssues.map((issue) => (
                 <div key={issue.id} className="backlog-issue-row">
                   <div className="backlog-issue-main">
                     <span className={`backlog-issue-type backlog-type-${issue.type}`}>
@@ -291,24 +482,26 @@ export default function Backlog() {
           <article className="backlog-next-sprint-card">
             <div className="backlog-next-sprint-head">
               <div>
-                <h2>Sprint 3 - Advanced Features</h2>
-                <p>Add reporting, analytics, and automation</p>
+                <h2>Next Sprint</h2>
+                <p>Issues not in the active sprint can be planned here.</p>
               </div>
-              <button className="btn backlog-outline-btn">Start Sprint</button>
+              <button className="btn backlog-outline-btn" onClick={handleStartSprint}>Start Sprint</button>
             </div>
             <div className="backlog-empty-state">
-              No issues in this sprint
+              {upcomingBacklogIssues.length === 0 ? 'No issues in next sprint' : `${upcomingBacklogIssues.length} issues available in backlog`}
             </div>
           </article>
 
           <article className="backlog-pool-card">
             <div className="backlog-pool-head">
               <h2>Backlog</h2>
-              <p>{UPCOMING_BACKLOG_ISSUES.length} issues • Drag issues to sprints to plan your work</p>
+              <p>{upcomingBacklogIssues.length} issues • Drag issues to sprints to plan your work</p>
             </div>
 
             <div className="backlog-issue-list backlog-pool-list">
-              {UPCOMING_BACKLOG_ISSUES.map((issue) => (
+              {upcomingBacklogIssues.length === 0 ? (
+                <div className="backlog-inline-empty">No backlog issues for this project.</div>
+              ) : upcomingBacklogIssues.map((issue) => (
                 <div key={issue.id} className="backlog-issue-row backlog-pool-row">
                   <div className="backlog-issue-main">
                     <span className={`backlog-issue-type backlog-type-${issue.type}`}>

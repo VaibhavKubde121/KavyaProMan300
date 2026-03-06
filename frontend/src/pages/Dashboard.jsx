@@ -4,6 +4,7 @@ import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLog
 import { NavLink } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
+import useNotificationCount from '../hooks/useNotificationCount'
 
 export default function Dashboard() {
   const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const notificationCount = useNotificationCount()
   const [attachments, setAttachments] = useState([])
   const [avatar, setAvatar] = useState('')
   useEffect(() => {
@@ -261,7 +263,7 @@ export default function Dashboard() {
                 <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
               </div>
 
-              <button className="btn btn-link me-2 bell-black" title="Notifications">
+              <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
                 <FiBell size={20} />
               </button>
 
