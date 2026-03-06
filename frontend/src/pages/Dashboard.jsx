@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './Dashboard.css'
 import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiShare2, FiDownload, FiTrash2, FiFilter, FiBookmark, FiClock, FiRepeat, FiArrowRight, FiUpload, FiAlignLeft, FiAlignCenter, FiAlignRight, FiAlignJustify } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
@@ -6,12 +6,15 @@ import { useState, useRef, useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
 import useNotificationCount from '../hooks/useNotificationCount'
 
-export default function Dashboard() {
+export default function Dashboard({ initialShowCreate = false }) {
   const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
   const navigate = useNavigate()
+  const location = useLocation()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+  const [selectedOrg, setSelectedOrg] = useState(() => {
+    try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null }
+  })
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
@@ -23,13 +26,92 @@ export default function Dashboard() {
     const stored = localStorage.getItem('userAvatar')
     if (stored) setAvatar(stored)
   }, [])
+
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
+
+  // listen for organization changes
+  useEffect(() => {
+    function onOrgChanged(e){
+      const org = e?.detail || null
+      setSelectedOrg(org)
+      try { if (org) localStorage.setItem('org', JSON.stringify(org)) }
+      catch (err) {}
+    }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
   const [project, setProject] = useState('KavyaProMan 360')
   const [issueType, setIssueType] = useState('Story')
   const [epicName, setEpicName] = useState('')
   const [summary, setSummary] = useState('')
   const [errors, setErrors] = useState({})
   const [selectedDifficulty, setSelectedDifficulty] = useState('Medium')
+  const createEmptyFilters = () => ({
+    status: [],
+    issueType: [],
+    sprint: [],
+    priority: [],
+    assignee: [], 
+    project: [],
+    dueFrom: '',
+    dueTo: ''
+  })
+  const [selectedFilters, setSelectedFilters] = useState(createEmptyFilters)
+  const [savedFilters, setSavedFilters] = useState([])
   const fileInputRef = useRef(null)
+  const notificationRef = useRef(null)
+  const unreadCount = notifications.filter(n => !n.read).length
+  const activeFilterCount =
+    selectedFilters.status.length +
+    selectedFilters.issueType.length +
+    selectedFilters.sprint.length +
+    selectedFilters.priority.length +
+    selectedFilters.assignee.length +
+    selectedFilters.project.length +
+    (selectedFilters.dueFrom ? 1 : 0) +
+    (selectedFilters.dueTo ? 1 : 0)
+
+  useEffect(() => {
+    function handleOutsideClick(e) {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('dashboardSavedFilters')
+      const parsed = raw ? JSON.parse(raw) : []
+      if (Array.isArray(parsed)) setSavedFilters(parsed)
+    } catch (err) {
+      console.error('failed to load saved filters', err)
+    }
+  }, [])
+
+  function toggleNotifications() {
+    setShowNotifications(prev => !prev)
+  }
+
+  function markAsRead(id) {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)))
+  }
+
+  function markAllAsRead() {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
   // convert File -> data URL and store with metadata so files can be opened later
   function fileToDataUrl(file){
     return new Promise((res, rej) => {
@@ -163,6 +245,86 @@ export default function Dashboard() {
     }
   }
 
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 768
+  }
+
+  function toggleFilterSelection(group, value) {
+    setSelectedFilters((prev) => {
+      const exists = prev[group].includes(value)
+      return {
+        ...prev,
+        [group]: exists
+          ? prev[group].filter((item) => item !== value)
+          : [...prev[group], value]
+      }
+    })
+  }
+
+  function clearAllFilters() {
+    setSelectedFilters(createEmptyFilters())
+  }
+
+  function getFilterSummary(filters) {
+    const parts = []
+    if (filters.status.length) parts.push(`${filters.status.length} status`)
+    if (filters.issueType.length) parts.push(`${filters.issueType.length} issue type`)
+    if (filters.sprint.length) parts.push(`${filters.sprint.length} sprint`)
+    if (filters.priority.length) parts.push(`${filters.priority.length} priority`)
+    if (filters.assignee.length) parts.push(`${filters.assignee.length} assignee`)
+    if (filters.project.length) parts.push(`${filters.project.length} project`)
+    if (filters.dueFrom || filters.dueTo) parts.push('due date range')
+    return parts.length ? parts.join(', ') : 'No filters selected'
+  }
+
+  function saveCurrentFilter() {
+    if (activeFilterCount === 0) return
+    const newFilter = {
+      id: Date.now(),
+      name: `Custom Filter ${savedFilters.length + 1}`,
+      description: getFilterSummary(selectedFilters),
+      criteria: { ...selectedFilters }
+    }
+    const updated = [newFilter, ...savedFilters]
+    setSavedFilters(updated)
+    try {
+      localStorage.setItem('dashboardSavedFilters', JSON.stringify(updated))
+    } catch (err) {
+      console.error('failed to save filter', err)
+    }
+    setShowFilters(false)
+  }
+
+  function applySavedFilter(criteria) {
+    setSelectedFilters({
+      status: [...criteria.status],
+      issueType: [...criteria.issueType],
+      sprint: [...criteria.sprint],
+      priority: [...criteria.priority],
+      assignee: [...criteria.assignee],
+      project: [...criteria.project],
+      dueFrom: criteria.dueFrom || '',
+      dueTo: criteria.dueTo || ''
+    })
+  }
+
+  function deleteSavedFilter(id) {
+    const updated = savedFilters.filter((item) => item.id !== id)
+    setSavedFilters(updated)
+    try {
+      localStorage.setItem('dashboardSavedFilters', JSON.stringify(updated))
+    } catch (err) {
+      console.error('failed to delete saved filter', err)
+    }
+  }
+
+  function closeCreateModal() {
+    setShowCreate(false)
+    if (location.pathname === '/create-issue') {
+      navigate('/dashboard', { replace: true })
+    }
+  }
+
   return (
     <div className="dashboard-root d-flex">
       <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
@@ -248,7 +410,7 @@ export default function Dashboard() {
       {/* floating toggle (uses same button for large and small screens) - removed separate floating button */}
 
       {/* mobile toggle (visible on small/medium screens) - also toggles collapsed on large screens */}
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 
@@ -257,10 +419,37 @@ export default function Dashboard() {
       <main className={`content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="dash-header mb-4">
           <div>
-            <div className="top-search-row mb-3">
-              <div className="input-group top-search-medium">
+            <div className={`top-search-row mb-3 ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+              <div
+                className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+                onClick={() => {
+                  if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+                }}
+              >
                 <span className="input-group-text"><FiSearch /></span>
-                <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
+                <input
+                  className="form-control"
+                  placeholder="Search issues, projects..."
+                  aria-label="Search projects and issues"
+                  value={topSearchText}
+                  onChange={(event) => setTopSearchText(event.target.value)}
+                  onFocus={() => {
+                    if (isMobileScreen()) setMobileSearchOpen(true)
+                  }}
+                />
+                {mobileSearchOpen && (
+                  <button
+                    type="button"
+                    className="dashboard-search-close"
+                    aria-label="Close search"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setMobileSearchOpen(false)
+                    }}
+                  >
+                    <FiX size={16} />
+                  </button>
+                )}
               </div>
 
               <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
@@ -280,7 +469,9 @@ export default function Dashboard() {
               <span className="input-group-text"><FiSearch /></span>
               <input className="form-control" placeholder="Search issues by title, key, description..." />
             </div>
-            <button className="btn btn-outline-secondary" onClick={() => setShowFilters(true)}>Filters</button>
+            <button className="btn btn-outline-secondary" onClick={() => setShowFilters(true)}>
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
           </div>
         </header>
 
@@ -301,31 +492,31 @@ export default function Dashboard() {
                     <div className="filter-section">
                       <h6>Status</h6>
                       <div className="filter-list">
-                        <label><input type="checkbox" /> To Do</label>
-                        <label><input type="checkbox" /> In Progress</label>
-                        <label><input type="checkbox" /> In Review</label>
-                        <label><input type="checkbox" /> Done</label>
-                        <label><input type="checkbox" /> Backlog</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('To Do')} onChange={() => toggleFilterSelection('status', 'To Do')} /> To Do</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('In Progress')} onChange={() => toggleFilterSelection('status', 'In Progress')} /> In Progress</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('In Review')} onChange={() => toggleFilterSelection('status', 'In Review')} /> In Review</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('Done')} onChange={() => toggleFilterSelection('status', 'Done')} /> Done</label>
+                        <label><input type="checkbox" checked={selectedFilters.status.includes('Backlog')} onChange={() => toggleFilterSelection('status', 'Backlog')} /> Backlog</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Issue Type</h6>
                       <div className="filter-list">
-                        <label><input type="checkbox" /> ⚡ Epic</label>
-                        <label><input type="checkbox" /> 📘 Story</label>
-                        <label><input type="checkbox" /> ✓ Task</label>
-                        <label><input type="checkbox" /> 🐛 Bug</label>
-                        <label><input type="checkbox" /> ↳ Sub-task</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Epic')} onChange={() => toggleFilterSelection('issueType', 'Epic')} /> ⚡ Epic</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Story')} onChange={() => toggleFilterSelection('issueType', 'Story')} /> 📘 Story</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Task')} onChange={() => toggleFilterSelection('issueType', 'Task')} /> ✓ Task</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Bug')} onChange={() => toggleFilterSelection('issueType', 'Bug')} /> 🐛 Bug</label>
+                        <label><input type="checkbox" checked={selectedFilters.issueType.includes('Sub-task')} onChange={() => toggleFilterSelection('issueType', 'Sub-task')} /> ↳ Sub-task</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Sprint</h6>
                       <div className="filter-list">
-                        <label><input type="checkbox" /> Sprint 1 - Foundation <span className="muted">(completed)</span></label>
-                        <label><input type="checkbox" /> Sprint 2 - Board Implementation <span className="muted">(active)</span></label>
-                        <label><input type="checkbox" /> Sprint 3 - Advanced Features <span className="muted">(planned)</span></label>
+                        <label><input type="checkbox" checked={selectedFilters.sprint.includes('Sprint 1 - Foundation')} onChange={() => toggleFilterSelection('sprint', 'Sprint 1 - Foundation')} /> Sprint 1 - Foundation <span className="muted">(completed)</span></label>
+                        <label><input type="checkbox" checked={selectedFilters.sprint.includes('Sprint 2 - Board Implementation')} onChange={() => toggleFilterSelection('sprint', 'Sprint 2 - Board Implementation')} /> Sprint 2 - Board Implementation <span className="muted">(active)</span></label>
+                        <label><input type="checkbox" checked={selectedFilters.sprint.includes('Sprint 3 - Advanced Features')} onChange={() => toggleFilterSelection('sprint', 'Sprint 3 - Advanced Features')} /> Sprint 3 - Advanced Features <span className="muted">(planned)</span></label>
                       </div>
                     </div>
                   </div>
@@ -334,28 +525,28 @@ export default function Dashboard() {
                     <div className="filter-section">
                       <h6>Priority</h6>
                       <div className="filter-list priority-list">
-                        <label><input type="checkbox" /><span className="dot dot-red"/> High</label>
-                        <label><input type="checkbox" /><span className="dot dot-orange"/> Medium</label>
-                        <label><input type="checkbox" /><span className="dot dot-green"/> Low</label>
+                        <label><input type="checkbox" checked={selectedFilters.priority.includes('High')} onChange={() => toggleFilterSelection('priority', 'High')} /><span className="dot dot-red"/> High</label>
+                        <label><input type="checkbox" checked={selectedFilters.priority.includes('Medium')} onChange={() => toggleFilterSelection('priority', 'Medium')} /><span className="dot dot-orange"/> Medium</label>
+                        <label><input type="checkbox" checked={selectedFilters.priority.includes('Low')} onChange={() => toggleFilterSelection('priority', 'Low')} /><span className="dot dot-green"/> Low</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Assignee</h6>
                       <div className="filter-list assignee-list">
-                        <label><input type="checkbox" /> <span className="small-avatar">SJ</span> Sarah Johnson</label>
-                        <label><input type="checkbox" /> <span className="small-avatar">MC</span> Michael Chen</label>
-                        <label><input type="checkbox" /> <span className="small-avatar">ER</span> Emily Rodriguez</label>
-                        <label><input type="checkbox" /> <span className="small-avatar">DK</span> David Kim</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('Sarah Johnson')} onChange={() => toggleFilterSelection('assignee', 'Sarah Johnson')} /> <span className="small-avatar">SJ</span> Sarah Johnson</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('Michael Chen')} onChange={() => toggleFilterSelection('assignee', 'Michael Chen')} /> <span className="small-avatar">MC</span> Michael Chen</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('Emily Rodriguez')} onChange={() => toggleFilterSelection('assignee', 'Emily Rodriguez')} /> <span className="small-avatar">ER</span> Emily Rodriguez</label>
+                        <label><input type="checkbox" checked={selectedFilters.assignee.includes('David Kim')} onChange={() => toggleFilterSelection('assignee', 'David Kim')} /> <span className="small-avatar">DK</span> David Kim</label>
                       </div>
                     </div>
 
                     <div className="filter-section">
                       <h6>Project</h6>
                       <div className="filter-list project-list">
-                        <label><input type="checkbox" /> 🚀 KavyaProMan 360</label>
-                        <label><input type="checkbox" /> 🌐 Website Redesign</label>
-                        <label><input type="checkbox" /> 📱 Mobile App</label>
+                        <label><input type="checkbox" checked={selectedFilters.project.includes('KavyaProMan 360')} onChange={() => toggleFilterSelection('project', 'KavyaProMan 360')} /> 🚀 KavyaProMan 360</label>
+                        <label><input type="checkbox" checked={selectedFilters.project.includes('Website Redesign')} onChange={() => toggleFilterSelection('project', 'Website Redesign')} /> 🌐 Website Redesign</label>
+                        <label><input type="checkbox" checked={selectedFilters.project.includes('Mobile App')} onChange={() => toggleFilterSelection('project', 'Mobile App')} /> 📱 Mobile App</label>
                       </div>
                     </div>
                   </div>
@@ -367,20 +558,30 @@ export default function Dashboard() {
                   <div className="due-col">
                     <div className="muted">Due Date Range</div>
                     <label className="small-muted">From</label>
-                    <input type="date" className="date-input" />
+                    <input
+                      type="date"
+                      className="date-input"
+                      value={selectedFilters.dueFrom}
+                      onChange={(e) => setSelectedFilters(prev => ({ ...prev, dueFrom: e.target.value }))}
+                    />
                   </div>
                   <div className="due-col mt-4">
                     <label className="small-muted">To</label>
-                    <input type="date" className="date-input" />
+                    <input
+                      type="date"
+                      className="date-input"
+                      value={selectedFilters.dueTo}
+                      onChange={(e) => setSelectedFilters(prev => ({ ...prev, dueTo: e.target.value }))}
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="filters-modal-footer d-flex align-items-center">
-                <button className="link-clear">Clear All Filters</button>
+                <button className="link-clear" onClick={clearAllFilters} type="button">Clear All Filters</button>
                 <div className="ms-auto d-flex gap-3">
                   <button className="btn btn-outline-secondary" onClick={() => setShowFilters(false)}>Close</button>
-                  <button className="btn save-filter">Save Filter</button>
+                  <button className="btn save-filter" onClick={saveCurrentFilter} disabled={activeFilterCount === 0}>Save Filter</button>
                 </div>
               </div>
             </div>
@@ -388,13 +589,13 @@ export default function Dashboard() {
         )}
 
         {showCreate && (
-          <div className="create-issue-overlay" onClick={() => setShowCreate(false)}>
+          <div className="create-issue-overlay" onClick={closeCreateModal}>
             <div className="create-issue-container" role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}>
               <div className="create-issue-header d-flex align-items-center">
                 <h4>Create issue</h4>
                 <div className="ms-auto d-flex gap-2">
                   <button className="btn btn-sm btn-outline-secondary">Import issues</button>
-                  <button className="btn btn-link modal-close" onClick={() => setShowCreate(false)} title="Close"><FiX size={18} /></button>
+                  <button className="btn btn-link modal-close" onClick={closeCreateModal} title="Close"><FiX size={18} /></button>
                 </div>
               </div>
 
@@ -513,7 +714,13 @@ export default function Dashboard() {
                       <span className="ms-2">Create another</span>
                     </label> */}
 
-                    <button type="button" className="btn btn-outline-secondary cancel-btn" onClick={() => setShowCreate(false)}>Cancel</button>
+                    <button
+                      type="button"
+                      className="btn cancel-btn cancel-btn-danger"
+                      onClick={closeCreateModal}
+                    >
+                      Cancel
+                    </button>
 
                     <button type="button" className="btn btn-primary create-btn" onClick={handleCreate} disabled={Object.values(errors).some(v => v)}>Create</button>
                   </div>
@@ -535,14 +742,14 @@ export default function Dashboard() {
 
             <div className="saved-inner-grid">
               <div className="inner-filter-card">
-                <div className="inner-content" onClick={() => navigate('/all-my-issues')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues') }}>
+                <div className="inner-content" onClick={() => navigate('/all-my-issues?difficulty=High')} role="link" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=High') }}>
                   <div>
                     <h6>High Priority Tasks</h6>
                     <p className="filter-desc">All high and highest priority tasks</p>
                   </div>
 
                   <div className="filter-actions-row">
-                    <button className="apply-btn"><FiFilter className="me-2" />Apply</button>
+                    <button className="apply-btn" onClick={() => navigate('/all-my-issues?difficulty=High')}><FiFilter className="me-2" />Apply</button>
                     <div className="icons-row">
                       <button className="icon-btn" title="Share"><FiShare2 /></button>
                       <button className="icon-btn" title="Download"><FiDownload /></button>
@@ -589,7 +796,7 @@ export default function Dashboard() {
                   <div className="progress-count">0/6</div>
                 </div>
                 <div className="progress-track"><div className="progress-fill" style={{width: '0%'}}></div></div>
-                <div className="time-remaining"><FiClock className="me-2" />-728 days left</div>
+                <div className="time-remaining"><FiClock className="me-2" />{'-728 days left'}</div>
               </div>
             </div>
           </div>
@@ -600,9 +807,15 @@ export default function Dashboard() {
               <h3 className="stat-title">{totalIssues}</h3>
 
               <div className="issues-legend">
-                <div className="legend-row"><span className="dot dot-red"/> High <span className="legend-count">{difficultyCounts.High}</span></div>
-                <div className="legend-row"><span className="dot dot-orange"/> Medium <span className="legend-count">{difficultyCounts.Medium}</span></div>
-                <div className="legend-row"><span className="dot dot-green"/> Low <span className="legend-count">{difficultyCounts.Low}</span></div>
+                <div className="legend-row clickable" onClick={() => navigate('/all-my-issues?difficulty=High')} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=High') }}>
+                  <span className="dot dot-red"/> High <span className="legend-count">{difficultyCounts.High}</span>
+                </div>
+                <div className="legend-row clickable" onClick={() => navigate('/all-my-issues?difficulty=Medium')} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=Medium') }}>
+                  <span className="dot dot-orange"/> Medium <span className="legend-count">{difficultyCounts.Medium}</span>
+                </div>
+                <div className="legend-row clickable" onClick={() => navigate('/all-my-issues?difficulty=Low')} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter') navigate('/all-my-issues?difficulty=Low') }}>
+                  <span className="dot dot-green"/> Low <span className="legend-count">{difficultyCounts.Low}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -772,3 +985,4 @@ export default function Dashboard() {
     </div>
   )
 }
+

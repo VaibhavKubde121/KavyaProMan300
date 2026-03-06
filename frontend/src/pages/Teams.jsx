@@ -1,9 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from 'react-router-dom'
 import "./Teams.css";
 import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiX, FiCheck, FiRepeat, FiArrowRight } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
 import useNotificationCount from '../hooks/useNotificationCount'
+
+const FALLBACK_MEMBERS = [
+  { id: 1, name: 'Sarah Johnson', email: 'sarah.johnson@kavyapro.com', role: 'Admin', projects: 3, activeIssues: 8, image: 'https://randomuser.me/api/portraits/women/44.jpg' },
+  { id: 2, name: 'Michael Chen', email: 'michael.chen@kavyapro.com', role: 'Developer', projects: 2, activeIssues: 6, image: 'https://randomuser.me/api/portraits/men/32.jpg' },
+  { id: 3, name: 'Emily Rodriguez', email: 'emily.rodriguez@kavyapro.com', role: 'Tester', projects: 2, activeIssues: 4, image: 'https://randomuser.me/api/portraits/women/65.jpg' }
+];
+
+function calculateStats(data) {
+  const adminCount = data.filter((m) => m.role === 'Admin').length;
+  const totalIssues = data.reduce((sum, m) => sum + (m.activeIssues || 0), 0);
+  const avgWorkload = data.length > 0 ? Math.round(totalIssues / data.length) : 0;
+
+  return {
+    totalMembers: data.length,
+    activeProjects: 3,
+    avgWorkload,
+    admins: adminCount
+  };
+}
 
 export default function Teams() {
   const navigate = useNavigate()
@@ -13,22 +32,32 @@ export default function Teams() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const notificationCount = useNotificationCount()
 
-  const [members, setMembers] = useState([]);
-  const [stats, setStats] = useState({
-    totalMembers: 0,
-    activeProjects: 0,
-    avgWorkload: 0,
-    admins: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  useEffect(() => {
+    function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
+
+  const [members, setMembers] = useState(FALLBACK_MEMBERS);
+  const [stats, setStats] = useState(calculateStats(FALLBACK_MEMBERS));
+  const [usingFallbackData, setUsingFallbackData] = useState(true);
 
   const [activeTab, setActiveTab] = useState("Members");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("All Roles");
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [topSearchText, setTopSearchText] = useState("");
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: "New member request pending approval", time: "5m ago", read: false },
+    { id: 2, title: "Role updated for Sarah Johnson", time: "25m ago", read: false },
+    { id: 3, title: "Weekly team summary generated", time: "1h ago", read: true }
+  ]);
   const [editingId, setEditingId] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
+  const notificationRef = useRef(null);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const [inviteFormData, setInviteFormData] = useState({
     name: '',
@@ -36,52 +65,59 @@ export default function Teams() {
     role: 'Developer'
   });
 
-  const API_BASE_URL = 'http://localhost:8080/api';
-
+  const API_BASE_URL = (import.meta?.env?.VITE_API_BASE || 'http://localhost:8080');
+  const MEMBERS_API_URL = `${API_BASE_URL}/api/members`;
   // Fetch team members and stats on component mount
   useEffect(() => {
     fetchTeamMembers();
-    fetchTeamStats();
   }, []);
 
+  // sync sidebar state from global controller
+  useEffect(() => {
+    setStats(calculateStats(members));
+  }, [members]);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const toggleNotifications = () => {
+    setShowNotifications((prev) => !prev);
+  };
+
+  const markAsRead = (id) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
   const fetchTeamMembers = async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
     try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE_URL}/members`);
+      const response = await fetch(MEMBERS_API_URL, { signal: controller.signal });
       if (!response.ok) {
         throw new Error('Failed to fetch members');
       }
       const data = await response.json();
-      setMembers(data);
-      setError(null);
+      setMembers(Array.isArray(data) ? data : []);
+      setUsingFallbackData(false);
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching members:', err);
+      setMembers(FALLBACK_MEMBERS);
+      setUsingFallbackData(true);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTeamStats = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/members`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch stats');
-      }
-      const data = await response.json();
-      
-      const adminCount = data.filter(m => m.role === 'Admin').length;
-      const totalIssues = data.reduce((sum, m) => sum + (m.activeIssues || 0), 0);
-      const avgWorkload = data.length > 0 ? Math.round(totalIssues / data.length) : 0;
-
-      setStats({
-        totalMembers: data.length,
-        activeProjects: 3, // You may need to fetch this from a different endpoint
-        avgWorkload: avgWorkload,
-        admins: adminCount
-      });
-    } catch (err) {
-      console.error('Error fetching stats:', err);
+      clearTimeout(timeoutId);
     }
   };
 
@@ -92,7 +128,7 @@ export default function Teams() {
 
   const handleSaveEdit = async (memberId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/members/${memberId}`, {
+      const response = await fetch(`${MEMBERS_API_URL}/${memberId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -110,6 +146,13 @@ export default function Teams() {
       setEditingMember(null);
       alert('Member updated successfully');
     } catch (err) {
+      if (usingFallbackData) {
+        const localUpdatedMember = { ...editingMember, id: memberId };
+        setMembers(members.map(m => m.id === memberId ? localUpdatedMember : m));
+        setEditingId(null);
+        setEditingMember(null);
+        return;
+      }
       alert('Error updating member: ' + err.message);
       console.error('Error:', err);
     }
@@ -138,7 +181,7 @@ export default function Teams() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/members`, {
+      const response = await fetch(MEMBERS_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,9 +197,21 @@ export default function Teams() {
       setMembers([...members, newMember]);
       setShowInviteModal(false);
       setInviteFormData({ name: '', email: '', role: 'Developer' });
-      fetchTeamStats();
       alert('Member invited successfully');
     } catch (err) {
+      if (usingFallbackData) {
+        const localMember = {
+          id: Date.now(),
+          ...inviteFormData,
+          projects: 0,
+          activeIssues: 0,
+          image: 'https://randomuser.me/api/portraits/lego/2.jpg'
+        };
+        setMembers([...members, localMember]);
+        setShowInviteModal(false);
+        setInviteFormData({ name: '', email: '', role: 'Developer' });
+        return;
+      }
       alert('Error inviting member: ' + err.message);
       console.error('Error:', err);
     }
@@ -168,7 +223,7 @@ export default function Teams() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/members/${memberId}`, {
+      const response = await fetch(`${MEMBERS_API_URL}/${memberId}`, {
         method: 'DELETE'
       });
 
@@ -177,13 +232,41 @@ export default function Teams() {
       }
 
       setMembers(members.filter(m => m.id !== memberId));
-      fetchTeamStats();
       alert('Member deleted successfully');
     } catch (err) {
+      if (usingFallbackData) {
+        setMembers(members.filter(m => m.id !== memberId));
+        return;
+      }
       alert('Error deleting member: ' + err.message);
       console.error('Error:', err);
     }
   };
+
+  // Notification handlers (were missing causing ReferenceError)
+  function toggleNotifications() {
+    setShowNotifications((s) => !s);
+  }
+
+  function markAllAsRead(e) {
+    e && e.stopPropagation && e.stopPropagation();
+    setNotifications((ns) => ns.map((n) => ({ ...n, read: true })));
+  }
+
+  function markAsRead(id) {
+    setNotifications((ns) => ns.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  }
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    function handleClickOutside(ev) {
+      if (notificationRef.current && !notificationRef.current.contains(ev.target)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Filter members based on search and role
   const filteredMembers = members.filter(member => {
@@ -206,26 +289,8 @@ export default function Teams() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="dashboard-root d-flex">
-        <aside className="sidebar d-flex flex-column">
-          <div className="sidebar-top">
-            <div className="brand d-flex align-items-center">
-              <div className="brand-logo">KP</div>
-              <div className="brand-name">KavyaProMan</div>
-            </div>
-          </div>
-        </aside>
-        <main className="content flex-grow-1 p-4">
-          <div className="team-container">
-            <div style={{ textAlign: 'center', padding: '50px' }}>
-              <h2>Loading...</h2>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 768
   }
 
   return (
@@ -240,9 +305,9 @@ export default function Teams() {
         </div>
 
         <div className="org-switch mt-3 d-flex align-items-center gap-2">
-          <div className="org-icon">K</div>
+          <div className="org-icon">{selectedOrg?.name ? selectedOrg.name.charAt(0) : 'K'}</div>
           <div className="org-info">
-            <div className="org-name">Kavya Technologies</div>
+            <div className="org-name">{selectedOrg?.name || 'Kavya Technologies'}</div>
             <button className="switch-org-btn mt-1" onClick={() => navigate('/organization')} aria-label="Switch Organization">
               <span className="switch-left"><FiRepeat size={16} className="me-2" /></span>
               <span className="switch-text">Switch Organization</span>
@@ -309,7 +374,7 @@ export default function Teams() {
       {/* removed separate floating toggle; single toggle button below handles both sizes */}
 
       {/* Mobile Toggle (also toggles collapsed on large screens) */}
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 
@@ -322,10 +387,36 @@ export default function Teams() {
           {/* Header */}
           <div className="team-header">
               <div>
-                <div className="top-search-row mb-3">
-                  <div className="input-group top-search-medium">
+                <div className={`top-search-row mb-3 ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+                  <div
+                    className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+                    onClick={() => {
+                      if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+                    }}
+                  >
                     <span className="input-group-text"><FiSearch /></span>
-                    <input className="form-control" placeholder="Search issues, projects..." />
+                    <input
+                      className="form-control"
+                      placeholder="Search issues, projects..."
+                      value={topSearchText}
+                      onChange={(e) => setTopSearchText(e.target.value)}
+                      onFocus={() => {
+                        if (isMobileScreen()) setMobileSearchOpen(true)
+                      }}
+                    />
+                    {mobileSearchOpen && (
+                      <button
+                        type="button"
+                        className="team-search-close"
+                        aria-label="Close search"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setMobileSearchOpen(false)
+                        }}
+                      >
+                        <FiX size={16} />
+                      </button>
+                    )}
                   </div>
 
                   <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
@@ -347,12 +438,6 @@ export default function Teams() {
                 {/* header-actions left intentionally for other right-side controls */}
               </div>
           </div>
-
-          {error && (
-            <div className="alert alert-danger" role="alert">
-              Error: {error}
-            </div>
-          )}
 
           {/* Invite action above stats */}
           <div className="stats-actions">

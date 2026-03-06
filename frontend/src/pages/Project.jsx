@@ -505,6 +505,30 @@ export default function Project() {
     setOpenProjectMenuId(null)
   }
 
+  function toggleNotifications() {
+    setShowNotifications((value) => !value)
+  }
+
+  function markNotificationRead(id) {
+    setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)))
+  }
+
+  function markAllNotificationsRead() {
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })))
+  }
+
+  function toggleSidebarForScreen() {
+    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
+      setCollapsed((value) => !value)
+    } else {
+      setMobileOpen((value) => !value)
+    }
+  }
+
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 768
+  }
+
   function renderCreateTabContent() {
     if (activeCreateTab === 'Members') {
       return (
@@ -830,6 +854,11 @@ export default function Project() {
         </div>
       </aside>
 
+      {/* mobile toggle button (delegated to global SidebarController) */}
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
+        <FiMenu size={18} />
+      </button>
+
       {collapsed && (
         <div className="topbar d-flex align-items-center px-3">
           <div className="d-flex align-items-center">
@@ -852,8 +881,13 @@ export default function Project() {
 
       <main className={`content project-content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="project-top-strip">
-          <div className="top-search-row">
-            <div className="input-group top-search-medium">
+          <div className={`top-search-row ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+            <div
+              className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+              onClick={() => {
+                if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+              }}
+            >
               <span className="input-group-text"><FiSearch /></span>
               <input
                 className="form-control"

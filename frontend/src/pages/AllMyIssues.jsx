@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate, NavLink } from 'react-router-dom'
+import { useNavigate, NavLink, useLocation } from 'react-router-dom'
 import './Dashboard.css'
 import { FiArrowLeft, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiRepeat, FiEdit, FiTrash2, FiUpload, FiAlignLeft, FiAlignCenter, FiAlignRight, FiAlignJustify, FiX } from 'react-icons/fi'
 
@@ -9,7 +9,12 @@ export default function AllMyIssues(){
   const navigate = useNavigate()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const selectedOrg = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+  const [selectedOrg, setSelectedOrg] = useState(() => { try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null } })
+  useEffect(() => {
+    function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [editingIndex, setEditingIndex] = useState(-1)
@@ -55,6 +60,11 @@ export default function AllMyIssues(){
     }catch(err){ console.error('download failed', err); window.open(file.data, '_blank', 'noopener') }
   }
 
+  const location = useLocation()
+  const filterDifficulty = (() => {
+    try { const qp = new URLSearchParams(location.search); return qp.get('difficulty') } catch (e) { return null }
+  })()
+
   useEffect(()=>{
     async function load(){
       try{
@@ -62,7 +72,12 @@ export default function AllMyIssues(){
         if(!res.ok) throw new Error('failed to fetch')
         const data = await res.json()
         // attachmentsJson may be a JSON string; parse into attachments array
-        const parsed = data.map(d => ({ ...d, attachments: d.attachmentsJson ? JSON.parse(d.attachmentsJson) : (d.attachments || []) }))
+        let parsed = data.map(d => ({ ...d, attachments: d.attachmentsJson ? JSON.parse(d.attachmentsJson) : (d.attachments || []) }))
+        // apply difficulty filter if provided via query param
+        if(filterDifficulty){
+          const wanted = (filterDifficulty || '').toString().toLowerCase()
+          parsed = parsed.filter(p => ((p.difficulty || '').toString().toLowerCase() === wanted))
+        }
         // show newest first
         setIssues(parsed.slice().reverse())
       }catch(e){
@@ -71,7 +86,7 @@ export default function AllMyIssues(){
       }
     }
     load()
-  },[])
+  },[location.search])
 
   function openEdit(idx){
     const item = issues[idx]
@@ -258,7 +273,7 @@ export default function AllMyIssues(){
       )}
 
       {/* single toggle button handles large and small screens */}
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 

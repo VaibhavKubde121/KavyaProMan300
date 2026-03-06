@@ -349,6 +349,62 @@
   color: #7c3aed;
 }
 
+html[data-theme='dark'] .backlog-outline-btn {
+  background: #000000 !important;
+  border: 1px solid #ffffff !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .backlog-outline-btn svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+html[data-theme='dark'] .backlog-sprint-card,
+html[data-theme='dark'] .backlog-next-sprint-card,
+html[data-theme='dark'] .backlog-pool-card {
+  background: #000000 !important;
+  border: 1px solid #ffffff !important;
+}
+
+html[data-theme='dark'] .backlog-sprint-head {
+  background: #000000 !important;
+  border-bottom: 1px solid #1f2937 !important;
+}
+
+html[data-theme='dark'] .backlog-sprint-icon,
+html[data-theme='dark'] .backlog-sprint-title-row h2,
+html[data-theme='dark'] .backlog-sprint-left p,
+html[data-theme='dark'] .backlog-next-sprint-head h2,
+html[data-theme='dark'] .backlog-next-sprint-head p,
+html[data-theme='dark'] .backlog-pool-head h2,
+html[data-theme='dark'] .backlog-pool-head p,
+html[data-theme='dark'] .backlog-empty-state {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .backlog-active-pill {
+  background: #111827 !important;
+  border: 1px solid #374151 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .backlog-issue-row {
+  background: #000000 !important;
+  border: 1px solid #374151 !important;
+}
+
+html[data-theme='dark'] .backlog-issue-key,
+html[data-theme='dark'] .backlog-issue-title {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .backlog-label-pill,
+html[data-theme='dark'] .backlog-points-pill {
+  background: #111827 !important;
+  color: #ffffff !important;
+}
+
 @media (max-width: 1200px) {
   .backlog-title-row h1 {
     font-size: 34px;

@@ -317,10 +317,34 @@ export default function Backlog() {
   function handleCompleteSprint() {
     setManualActiveIssueIds([])
   }
+  const unreadCount = notifications.filter((item) => !item.read).length
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
 
   function handleLogout() {
     localStorage.removeItem('user')
     navigate('/login', { replace: true })
+  }
+
+  function toggleNotifications() {
+    setShowNotifications((value) => !value)
+  }
+
+  function markNotificationRead(id) {
+    setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)))
+  }
+
+  function markAllNotificationsRead() {
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })))
   }
 
   return (
@@ -399,7 +423,7 @@ export default function Backlog() {
         </div>
       )}
 
-      <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed((value) => !value)} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 

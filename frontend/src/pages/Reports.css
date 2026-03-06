@@ -35,6 +35,22 @@
   background: #fff;
 }
 
+/* Styled wrapper for nicer dropdown with caret */
+.project-select-wrapper{
+  position:relative;display:inline-flex;align-items:center;background:linear-gradient(90deg,#fff,#f8fafc);border-radius:14px;padding:6px 8px;border:1px solid rgba(15,23,36,0.06);box-shadow:0 6px 18px rgba(15,23,36,0.04);min-width:220px;max-width:360px
+}
+.project-select-wrapper .project-dropdown{appearance:none;-webkit-appearance:none;border:none;background:transparent;padding:10px 36px 10px 12px;width:100%;font-weight:600}
+.project-select-wrapper .select-caret{position:absolute;right:10px;color:#374151;pointer-events:none;display:flex;align-items:center}
+
+/* Make dropdown compact on small screens */
+@media (max-width: 992px){
+  .project-select-wrapper{width:100%;max-width:320px}
+}
+@media (max-width: 600px){
+  .project-select-wrapper{width:100%;max-width:none}
+  .project-select-wrapper .project-dropdown{padding-right:36px}
+}
+
 /* ===========================
    SUMMARY CARDS (BIGGER)
 =========================== */
@@ -143,4 +159,68 @@
 .distribution-card h4 {
   margin-bottom: 4px;
   font-size: 18px;
+}
+
+/* ===== Responsive rules: medium (<=992px) and small (<=600px) ===== */
+@media (max-width: 992px) {
+  .reports-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap:wrap;
+  }
+
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4 .notification-wrapper,
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4 .create-issue-medium {
+    flex: 0 0 auto !important;
+  }
+
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4 .top-search-medium{
+    flex:0 0 44px !important;
+    max-width:44px !important;
+    min-width:44px !important;
+    width:44px !important;
+    cursor:pointer;
+    padding:6px !important;
+  }
+
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4 .top-search-medium .input-group-text{
+    margin:0 auto;
+  }
+
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4 .top-search-medium .form-control{
+    display:none !important;
+    pointer-events:none !important;
+  }
+
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4.mobile-search-open .top-search-medium{
+    flex:1 1 auto !important;
+    max-width:none !important;
+    min-width:0 !important;
+    width:auto !important;
+    padding:6px 10px !important;
+    cursor:text;
+  }
+
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4.mobile-search-open .top-search-medium .form-control{
+    display:block !important;
+    pointer-events:auto !important;
+  }
+
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4.mobile-search-open .notification-wrapper,
+  .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4.mobile-search-open .create-issue-medium{
+    display:none !important;
+  }
+}
+
+.reports-search-close{
+  align-items:center;
+  background:transparent;
+  border:none;
+  color:#6b7280;
+  cursor:pointer;
+  display:inline-flex;
+  justify-content:center;
+  margin-left:6px;
+  padding:0;
 }

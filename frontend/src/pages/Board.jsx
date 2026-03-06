@@ -20,7 +20,8 @@ import {
   FiArrowRight,
   FiFilter,
   FiChevronDown,
-  FiTag
+  FiTag,
+  FiX
 } from 'react-icons/fi'
 
 const BOARD_COLUMNS = [
@@ -384,10 +385,95 @@ export default function Board() {
     setAssigneeFilter('all')
     setTypeFilter('all')
   }
+  const activeFilterCount =
+    selectedFilters.status.length +
+    selectedFilters.type.length +
+    selectedFilters.priority.length +
+    selectedFilters.assignee.length +
+    selectedFilters.label.length
+  const unreadCount = notifications.filter((item) => !item.read).length
+
+  const allAssignees = useMemo(() => (
+    [...new Set(BOARD_COLUMNS.flatMap((column) => column.issues.map((issue) => issue.assignee)))]
+  ), [])
+  const allTypes = useMemo(() => (
+    [...new Set(BOARD_COLUMNS.flatMap((column) => column.issues.map((issue) => issue.type)))]
+  ), [])
+
+  const allLabels = useMemo(() => (
+    [...new Set(BOARD_COLUMNS.flatMap((column) => column.issues.flatMap((issue) => issue.labels)))]
+  ), [])
+
+  const filteredColumns = useMemo(() => {
+    const hasStatusFilter = selectedFilters.status.length > 0
+
+    return BOARD_COLUMNS
+      .filter((column) => !hasStatusFilter || selectedFilters.status.includes(column.key))
+      .map((column) => ({
+        ...column,
+        issues: column.issues.filter((issue) => {
+          const typeMatch = !selectedFilters.type.length || selectedFilters.type.includes(issue.type)
+          const priorityMatch = !selectedFilters.priority.length || selectedFilters.priority.includes(issue.priority)
+          const assigneeMatch = !selectedFilters.assignee.length || selectedFilters.assignee.includes(issue.assignee)
+          const labelMatch = !selectedFilters.label.length || issue.labels.some((label) => selectedFilters.label.includes(label))
+          return typeMatch && priorityMatch && assigneeMatch && labelMatch
+        })
+      }))
+  }, [selectedFilters])
 
   function handleLogout() {
     localStorage.removeItem('user')
     navigate('/login', { replace: true })
+  }
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false)
+      }
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(event.target)) {
+        setShowAssigneeDropdown(false)
+      }
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target)) {
+        setShowTypeDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
+  function toggleFilter(group, value) {
+    setSelectedFilters((current) => {
+      const exists = current[group].includes(value)
+      return {
+        ...current,
+        [group]: exists
+          ? current[group].filter((item) => item !== value)
+          : [...current[group], value]
+      }
+    })
+  }
+
+  function clearAllFilters() {
+    setSelectedFilters(createEmptyFilters())
+  }
+
+  function toggleNotifications() {
+    setShowNotifications((value) => !value)
+  }
+
+  function markNotificationRead(id) {
+    setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)))
+  }
+
+  function markAllNotificationsRead() {
+    setNotifications((current) => current.map((item) => ({ ...item, read: true })))
+  }
+
+  function formatTypeLabel(type) {
+    if (!type) return ''
+    return type.charAt(0).toUpperCase() + type.slice(1)
   }
 
   return (
@@ -466,7 +552,7 @@ export default function Board() {
         </div>
       )}
 
-      <button className="mobile-toggle btn btn-sm" onClick={() => setCollapsed((value) => !value)} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 
@@ -526,6 +612,91 @@ export default function Board() {
               <FiChevronDown size={15} />
             </button>
           </div>
+
+          {showFilters && (
+            <div className="filters-modal-overlay" onClick={() => setShowFilters(false)}>
+              <div className="filters-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+                <div className="filters-modal-header d-flex align-items-start">
+                  <div>
+                    <h5><FiFilter className="me-2" /> Board Filters</h5>
+                    <p className="muted">Refine visible cards by status, type, assignee, priority, and labels.</p>
+                  </div>
+                  <button className="btn modal-close" onClick={() => setShowFilters(false)} aria-label="Close">
+                    <FiX size={18} />
+                  </button>
+                </div>
+
+                <div className="filters-body">
+                  <div className="filters-grid">
+                    <div className="filters-column">
+                      <div className="filter-section">
+                        <h6>Status</h6>
+                        <div className="filter-list">
+                          <label><input type="checkbox" checked={selectedFilters.status.includes('todo')} onChange={() => toggleFilter('status', 'todo')} /> To Do</label>
+                          <label><input type="checkbox" checked={selectedFilters.status.includes('progress')} onChange={() => toggleFilter('status', 'progress')} /> In Progress</label>
+                          <label><input type="checkbox" checked={selectedFilters.status.includes('review')} onChange={() => toggleFilter('status', 'review')} /> In Review</label>
+                          <label><input type="checkbox" checked={selectedFilters.status.includes('done')} onChange={() => toggleFilter('status', 'done')} /> Done</label>
+                        </div>
+                      </div>
+
+                      <div className="filter-section">
+                        <h6>Issue Type</h6>
+                        <div className="filter-list">
+                          <label><input type="checkbox" checked={selectedFilters.type.includes('story')} onChange={() => toggleFilter('type', 'story')} /> Story</label>
+                          <label><input type="checkbox" checked={selectedFilters.type.includes('task')} onChange={() => toggleFilter('type', 'task')} /> Task</label>
+                          <label><input type="checkbox" checked={selectedFilters.type.includes('bug')} onChange={() => toggleFilter('type', 'bug')} /> Bug</label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="filters-column">
+                      <div className="filter-section">
+                        <h6>Priority</h6>
+                        <div className="filter-list priority-list">
+                          <label><input type="checkbox" checked={selectedFilters.priority.includes('critical')} onChange={() => toggleFilter('priority', 'critical')} /><span className="dot dot-red" /> Critical</label>
+                          <label><input type="checkbox" checked={selectedFilters.priority.includes('high')} onChange={() => toggleFilter('priority', 'high')} /><span className="dot dot-orange" /> High</label>
+                          <label><input type="checkbox" checked={selectedFilters.priority.includes('medium')} onChange={() => toggleFilter('priority', 'medium')} /><span className="dot dot-yellow" /> Medium</label>
+                          <label><input type="checkbox" checked={selectedFilters.priority.includes('low')} onChange={() => toggleFilter('priority', 'low')} /><span className="dot dot-green" /> Low</label>
+                        </div>
+                      </div>
+
+                      <div className="filter-section">
+                        <h6>Assignee</h6>
+                        <div className="filter-list">
+                          {allAssignees.map((assignee) => (
+                            <label key={assignee}>
+                              <input type="checkbox" checked={selectedFilters.assignee.includes(assignee)} onChange={() => toggleFilter('assignee', assignee)} /> {assignee}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="divider" />
+
+                  <div className="filter-section">
+                    <h6>Labels</h6>
+                    <div className="filter-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '10px' }}>
+                      {allLabels.map((label) => (
+                        <label key={label}>
+                          <input type="checkbox" checked={selectedFilters.label.includes(label)} onChange={() => toggleFilter('label', label)} /> {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="filters-modal-footer d-flex align-items-center">
+                  <button className="link-clear" onClick={clearAllFilters} type="button">Clear All Filters</button>
+                  <div className="ms-auto d-flex gap-3">
+                    <button className="btn btn-outline-secondary" onClick={() => setShowFilters(false)}>Close</button>
+                    <button className="btn save-filter" onClick={() => setShowFilters(false)} type="button">Apply Filters</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="board-columns-scroll">
             <div className="board-columns-track">

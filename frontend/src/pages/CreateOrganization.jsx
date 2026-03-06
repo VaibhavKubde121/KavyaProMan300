@@ -32,7 +32,7 @@ function CreateOrganization() {
    
         <div className="org-steps">
           <span className="org-step active">1 Basic Info</span>
-          <span className="org-step">2 Customize</span>
+          <span className="org-step active">2 Customize</span>
         </div>
 
       

@@ -1,10 +1,11 @@
 package com.team1.backend.service;
 
-import com.team1.backend.model.Member;
-import com.team1.backend.repository.MemberRepository;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.team1.backend.model.Member;
+import com.team1.backend.repository.MemberRepository;
 
 @Service
 public class MemberService {

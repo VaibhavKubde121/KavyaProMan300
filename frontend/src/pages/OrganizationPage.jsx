@@ -51,20 +51,20 @@ function OrganizationPage() {
       {/* Header */}
       <div className="org-list-header">
         <h1 className="org-list-title">KavyaProMan 300</h1>
-        <button className="org-list-logout" onClick={() => {
-          // permanently clear session and selected org, then go to login
-          localStorage.removeItem('user')
-          localStorage.removeItem('org')
-          navigate('/login', { replace: true })
-        }}>
-          Logout
-        </button>
       </div>
 
       {/* Subtitle */}
       <p className="org-list-subtitle">
         Select an organization to continue
       </p>
+      <button className="org-list-logout" onClick={() => {
+        // permanently clear session and selected org, then go to login
+        localStorage.removeItem('user')
+        localStorage.removeItem('org')
+        navigate('/login', { replace: true })
+      }}>
+        Logout
+      </button>
 
       {/* Search */}
       <input
@@ -98,6 +98,12 @@ function OrganizationPage() {
                 onClick={() => {
                   // store selected org so dashboard can pick it up
                   localStorage.setItem('org', JSON.stringify(org))
+                  // notify other pages about the change
+                  try {
+                    window.dispatchEvent(new CustomEvent('org:changed', { detail: org }))
+                  } catch (e) {
+                    // ignore
+                  }
                   navigate('/dashboard')
                 }}
               >

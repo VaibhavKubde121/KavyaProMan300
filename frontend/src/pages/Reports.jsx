@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import {
   FiGrid,
@@ -8,13 +8,17 @@ import {
   FiCreditCard,
   FiSettings,
   FiLogOut,
+  FiMenu,
   FiSearch,
   FiBell,
   FiPlus,
   FiTrendingUp,
+  FiRepeat,
+  FiArrowRight,
   FiTarget,
   FiClock,
   FiActivity,
+  FiX,
 } from "react-icons/fi";
 import {
   BarChart,
@@ -34,13 +38,54 @@ import "./Dashboard.css";
 const Reports = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("velocity");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [topSearchText, setTopSearchText] = useState("");
   const [selectedProject, setSelectedProject] = useState("KavyaProMan 360");
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+  const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
+  const [selectedOrg, setSelectedOrg] = useState(() => {
+    try {
+      return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null
+    } catch (e) { return null }
+  })
+  const [avatar, setAvatar] = useState('')
+  useEffect(() => { const stored = localStorage.getItem('userAvatar'); if (stored) setAvatar(stored) }, [])
+
+  // listen for organization changes from OrganizationPage or other parts of app
+  useEffect(() => {
+    function onOrgChanged(e) {
+      const org = e?.detail || null
+      setSelectedOrg(org)
+      try { if (org) localStorage.setItem('org', JSON.stringify(org)) }
+      catch (err) {}
+    }
+    window.addEventListener('org:changed', onOrgChanged)
+    return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
+
+  function handleLogout(){ localStorage.removeItem('user'); navigate('/login', { replace:true }) }
 
   const projects = [
     "KavyaProMan 360",
     "Website Redesign",
     "Mobile App",
   ];
+
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
 
   // ===== SAMPLE DATA =====
   const issues = [
@@ -88,46 +133,189 @@ const Reports = () => {
   ];
 
   const COLORS = ["#f4b400", "#0969da", "#2da44e"];
+  // Notifications state for topbar
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'New report generated: Sprint 5', time: '5m ago', read: false },
+    { id: 2, title: 'Project plan updated', time: '25m ago', read: false },
+    { id: 3, title: 'Export complete', time: '1h ago', read: true }
+  ]);
+  const notificationRef = useRef(null);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(item => ({ ...item, read: true })));
+  };
+
+  const markNotificationAsRead = (id) => {
+    setNotifications(prev =>
+      prev.map(item => (item.id === id ? { ...item, read: true } : item))
+    );
+  };
+
+  const toggleSidebarForScreen = () => {
+    if (typeof window !== "undefined" && window.innerWidth >= 992) {
+      setCollapsed(prev => !prev);
+    } else {
+      setMobileOpen(prev => !prev);
+    }
+  };
+
+  const isMobileScreen = () => typeof window !== "undefined" && window.innerWidth <= 768;
 
   return (
     <div className="dashboard-root d-flex">
 
       {/* ===== SIDEBAR SAME AS BEFORE ===== */}
-      <aside className="sidebar d-flex flex-column">
+      <aside className={`sidebar d-flex flex-column ${collapsed ? "collapsed" : ""} ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-top">
-          <div className="brand">
+          <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
             <div className="brand-name">KavyaProMan</div>
           </div>
         </div>
 
-        <nav className="nav flex-column mt-4">
-          <NavLink to="/dashboard" className="nav-item"><FiGrid /> Dashboard</NavLink>
-          <NavLink to="/projects" className="nav-item"><FiFolder /> Projects</NavLink>
-          <NavLink to="/teams" className="nav-item"><FiUsers /> Teams</NavLink>
-          <NavLink to="/reports" className="nav-item active"><FiBarChart2 /> Reports</NavLink>
-          <NavLink to="/subscription" className="nav-item"><FiCreditCard /> Subscription</NavLink>
-          <NavLink to="/settings" className="nav-item"><FiSettings /> Settings</NavLink>
-        </nav>
+        <div className="org-switch mt-3 d-flex align-items-center gap-2">
+          <div className="org-icon">{selectedOrg?.name ? selectedOrg.name.charAt(0) : 'K'}</div>
+          <div className="org-info">
+            <div className="org-name">{selectedOrg?.name || 'Kavya Technologies'}</div>
+            <button className="switch-org-btn mt-1" onClick={() => navigate('/organization')} aria-label="Switch Organization">
+              <span className="switch-left"><FiRepeat size={16} className="me-2" /></span>
+              <span className="switch-text">Switch Organization</span>
+              <FiArrowRight size={16} className="switch-arrow" />
+            </button>
+          </div>
+        </div>
 
-        <div className="mt-auto p-3">
-          <button className="btn logout-badge">
-            <FiLogOut /> Logout
-          </button>
+        <div className="sidebar-inner d-flex flex-column mt-3">
+          <div className="nav-scroll">
+            <nav className="nav flex-column">
+              <NavLink to="/dashboard" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiGrid className="me-3 nav-icon"/> <span className="nav-text">Dashboard</span>
+              </NavLink>
+              <NavLink to="/projects" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiFolder className="me-3 nav-icon"/> <span className="nav-text">Projects</span>
+              </NavLink>
+              <NavLink to="/teams" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiUsers className="me-3 nav-icon"/> <span className="nav-text">Teams</span>
+              </NavLink>
+              <NavLink to="/reports" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiBarChart2 className="me-3 nav-icon"/> <span className="nav-text">Reports</span>
+              </NavLink>
+              <NavLink to="/subscription" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiCreditCard className="me-3 nav-icon"/> <span className="nav-text">Subscription</span>
+              </NavLink>
+              <NavLink to="/settings" className={({isActive})=> `nav-item d-flex align-items-center mb-2 ${isActive? 'active':''}`}>
+                <FiSettings className="me-3 nav-icon"/> <span className="nav-text">Settings</span>
+              </NavLink>
+            </nav>
+          </div>
+
+          <div className="sidebar-footer mt-3 d-flex flex-column align-items-start">
+            <div className="profile d-flex align-items-center w-100">
+              <div className="avatar-icon">{avatar ? <img src={avatar} alt="avatar" /> : <FiUser size={20} />}</div>
+              <div className="ms-2 user-info">
+                <div className="user-name">{displayName}</div>
+                <div className="user-role">Admin</div>
+              </div>
+            </div>
+            <button className="btn logout-badge mt-3" onClick={handleLogout} title="Logout">
+              <FiLogOut size={16} className="me-2" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
       </aside>
+
+      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar" type="button">
+        <FiMenu size={18} />
+      </button>
+
+      <div className={`mobile-overlay ${mobileOpen ? "show" : ""}`} onClick={() => setMobileOpen(false)} />
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="content flex-grow-1 p-4">
 
         {/* ===== TOP SEARCH ===== */}
-        <div className="top-search-row mb-4">
-          <div className="input-group top-search-medium">
+        <div className={`top-search-row mb-4 ${mobileSearchOpen ? "mobile-search-open" : ""}`}>
+          <div
+            className={`input-group top-search-medium ${mobileSearchOpen ? "mobile-open" : ""}`}
+            onClick={() => {
+              if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true);
+            }}
+          >
             <span className="input-group-text"><FiSearch /></span>
-            <input className="form-control" placeholder="Search issues, projects..." />
+            <input
+              className="form-control"
+              placeholder="Search issues, projects..."
+              value={topSearchText}
+              onChange={(e) => setTopSearchText(e.target.value)}
+              onFocus={() => {
+                if (isMobileScreen()) setMobileSearchOpen(true);
+              }}
+            />
+            {mobileSearchOpen && (
+              <button
+                type="button"
+                className="reports-search-close"
+                aria-label="Close search"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setMobileSearchOpen(false);
+                }}
+              >
+                <FiX size={16} />
+              </button>
+            )}
           </div>
 
-          <button className="btn btn-link me-2"><FiBell size={20} /></button>
+          <div className="notification-wrapper me-2" ref={notificationRef}>
+            <button
+              className="btn btn-link bell-black"
+              onClick={() => setShowNotifications(prev => !prev)}
+              aria-label="Toggle notifications"
+              type="button"
+            >
+              <FiBell size={20} />
+            </button>
+            {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+
+            {showNotifications && (
+              <div className="notification-dropdown">
+                <div className="notification-header">
+                  <span>Notifications</span>
+                  <button className="mark-all-btn" onClick={markAllAsRead} type="button">
+                    Mark all as read
+                  </button>
+                </div>
+                <div className="notification-list">
+                  {notifications.map(item => (
+                    <button
+                      key={item.id}
+                      className={`notification-item-row ${item.read ? "" : "unread"}`.trim()}
+                      onClick={() => markNotificationAsRead(item.id)}
+                      type="button"
+                    >
+                      <div className="notification-title">{item.title}</div>
+                      <div className="notification-time">{item.time}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <button className="btn create-issue-medium" onClick={() => navigate("/create-issue")}>
             <FiPlus /> Create Issue
@@ -141,15 +329,20 @@ const Reports = () => {
             <p className="text-muted">Track project progress and team performance</p>
           </div>
 
-          <select
-            className="project-dropdown"
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-          >
-            {projects.map(p => (
-              <option key={p}>{p}</option>
-            ))}
-          </select>
+          <div className="project-select-wrapper">
+            <select
+              className="project-dropdown"
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+            >
+              {projects.map(p => (
+                <option key={p}>{p}</option>
+              ))}
+            </select>
+            <span className="select-caret" aria-hidden>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </span>
+          </div>
         </div>
 
         {/* ===== SUMMARY CARDS WITH ICONS ===== */}
