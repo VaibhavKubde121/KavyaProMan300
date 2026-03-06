@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import './Dashboard.css'
 import './Board.css'
+import useNotificationCount from '../hooks/useNotificationCount'
 import {
   FiGrid,
   FiFolder,
@@ -27,102 +28,192 @@ const BOARD_COLUMNS = [
   {
     key: 'todo',
     title: 'To Do',
-    tone: 'todo',
-    issues: [
-      {
-        id: 'KPM-4',
-        type: 'bug',
-        typeLabel: '🐞',
-        title: 'Bug: Filter not working on board view',
-        labels: ['bug', 'frontend'],
-        assignee: 'Sarah Johnson',
-        points: 2,
-        priority: 'high'
-      },
-      {
-        id: 'KPM-9',
-        type: 'task',
-        typeLabel: '☑',
-        title: 'Optimize database queries',
-        labels: ['backend', 'performance'],
-        assignee: 'Michael Chen',
-        points: 5,
-        priority: 'medium'
-      },
-      {
-        id: 'KPM-10',
-        type: 'story',
-        typeLabel: '📘',
-        title: 'Design onboarding checklist',
-        labels: ['ux', 'story'],
-        assignee: 'Emily Rodriguez',
-        points: 3,
-        priority: 'medium'
-      }
-    ]
+    tone: 'todo'
   },
   {
     key: 'progress',
     title: 'In Progress',
-    tone: 'progress',
-    issues: [
-      {
-        id: 'KPM-2',
-        type: 'story',
-        typeLabel: '📘',
-        title: 'Implement Kanban board with drag and drop',
-        labels: ['frontend', 'core'],
-        assignee: 'Michael Chen',
-        points: 13,
-        priority: 'critical'
-      },
-      {
-        id: 'KPM-3',
-        type: 'story',
-        typeLabel: '📘',
-        title: 'Add sprint planning interface',
-        labels: ['frontend', 'sprints'],
-        assignee: 'Emily Rodriguez',
-        points: 8,
-        priority: 'high'
-      }
-    ]
+    tone: 'progress'
   },
   {
     key: 'review',
     title: 'In Review',
-    tone: 'review',
-    issues: [
-      {
-        id: 'KPM-5',
-        type: 'task',
-        typeLabel: '☑',
-        title: 'Setup authentication system',
-        labels: ['backend', 'security'],
-        assignee: 'David Kim',
-        points: 8,
-        priority: 'critical'
-      }
-    ]
+    tone: 'review'
   },
   {
     key: 'done',
     title: 'Done',
-    tone: 'done',
-    issues: [
-      {
-        id: 'KPM-1',
-        type: 'task',
-        typeLabel: '☑',
-        title: 'Project repository initialization',
-        labels: ['devops', 'setup'],
-        assignee: 'Sarah Johnson',
-        points: 3,
-        priority: 'low'
-      }
-    ]
+    tone: 'done'
   }
 ]
+
+const ISSUE_TYPE_ICONS = {
+  bug: '🐞',
+  story: '📘',
+  task: '☑',
+  epic: '⚡',
+  spike: '🧪',
+  'sub-task': '↳'
+}
+
+const STATUS_TO_COLUMN = {
+  todo: 'todo',
+  open: 'todo',
+  backlog: 'todo',
+  progress: 'progress',
+  'in progress': 'progress',
+  review: 'review',
+  'in review': 'review',
+  done: 'done',
+  closed: 'done',
+  completed: 'done',
+  resolved: 'done'
+}
+
+function safeJsonParse(raw, fallback) {
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+function getStoredJson(key, fallback) {
+  if (typeof window === 'undefined') {
+    return fallback
+  }
+
+  const raw = localStorage.getItem(key)
+  if (!raw) {
+    return fallback
+  }
+
+  return safeJsonParse(raw, fallback)
+}
+
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function normalizeProjectKey(value) {
+  return String(value || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 10)
+}
+
+function buildStorageKey(selectedOrg) {
+  const rawToken = selectedOrg?.id || selectedOrg?.username || selectedOrg?.name || 'default'
+  const safeToken = String(rawToken).toLowerCase().replace(/[^a-z0-9]+/g, '_')
+  return `kpm_projects_${safeToken}`
+}
+
+function resolveProjectId(projectText, projects) {
+  const normalized = normalizeText(projectText)
+  if (!normalized) {
+    return null
+  }
+
+  for (const project of projects) {
+    const key = normalizeText(project?.id)
+    const name = normalizeText(project?.name)
+    if (
+      normalized === key ||
+      normalized === name ||
+      normalized.includes(`(${key})`) ||
+      normalized.startsWith(`${key}-`) ||
+      normalized.includes(name)
+    ) {
+      return project.id
+    }
+  }
+
+  return null
+}
+
+function normalizeIssueType(value) {
+  const normalized = normalizeText(value)
+  if (normalized === 'bug') {
+    return 'bug'
+  }
+  if (normalized === 'story') {
+    return 'story'
+  }
+  if (normalized === 'task') {
+    return 'task'
+  }
+  if (normalized === 'epic') {
+    return 'epic'
+  }
+  if (normalized === 'spike') {
+    return 'spike'
+  }
+  if (normalized === 'sub-task' || normalized === 'subtask') {
+    return 'sub-task'
+  }
+  return 'task'
+}
+
+function resolveColumnKey(issue) {
+  const status = normalizeText(issue?.status || issue?.state)
+  return STATUS_TO_COLUMN[status] || 'todo'
+}
+
+function getIssuePriority(issue) {
+  const difficulty = normalizeText(issue?.difficulty)
+  if (difficulty === 'high') {
+    return 'critical'
+  }
+  if (difficulty === 'medium') {
+    return 'high'
+  }
+  if (difficulty === 'low') {
+    return 'low'
+  }
+  return 'medium'
+}
+
+function getIssuePoints(issue) {
+  const difficulty = normalizeText(issue?.difficulty)
+  if (difficulty === 'high') {
+    return 8
+  }
+  if (difficulty === 'medium') {
+    return 5
+  }
+  if (difficulty === 'low') {
+    return 3
+  }
+  return 2
+}
+
+function buildIssueKey(issue, projectId, index) {
+  const rawId = String(issue?.id || '').trim()
+  if (/^[A-Z0-9]+-\d+$/i.test(rawId)) {
+    return rawId.toUpperCase()
+  }
+  if (/^\d+$/.test(rawId)) {
+    return `${projectId}-${rawId}`
+  }
+  return `${projectId}-${index + 1}`
+}
+
+function cycleFilterValue(current, options) {
+  const normalizedCurrent = normalizeText(current)
+  const currentIndex = options.findIndex((option) => normalizeText(option) === normalizedCurrent)
+  if (currentIndex < 0 || currentIndex === options.length - 1) {
+    return options[0]
+  }
+  return options[currentIndex + 1]
+}
+
+function formatTypeLabel(type) {
+  if (type === 'sub-task') {
+    return 'Sub-task'
+  }
+  return type.charAt(0).toUpperCase() + type.slice(1)
+}
 
 function getInitials(name) {
   return name
@@ -134,42 +225,165 @@ function getInitials(name) {
 }
 
 export default function Board() {
+  const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
   const navigate = useNavigate()
   const location = useLocation()
   const { projectId } = useParams()
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
+  const user = typeof window !== 'undefined' ? getStoredJson('user', null) : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
-  const [selectedOrg, setSelectedOrg] = useState(() => { try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null } })
-  useEffect(() => {
-    function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
-    window.addEventListener('org:changed', onOrgChanged)
-    return () => window.removeEventListener('org:changed', onOrgChanged)
-  }, [])
+  const selectedOrg = typeof window !== 'undefined' ? getStoredJson('org', null) : null
+  const projectStorageKey = useMemo(() => buildStorageKey(selectedOrg), [selectedOrg])
   const [collapsed, setCollapsed] = useState(false)
-  const createEmptyFilters = () => ({
-    status: [],
-    type: [],
-    priority: [],
-    assignee: [],
-    label: []
-  })
-  const [showFilters, setShowFilters] = useState(false)
-  const [selectedFilters, setSelectedFilters] = useState(createEmptyFilters)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false)
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false)
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'KPM-5 moved to In Review', time: '2m ago', read: false },
-    { id: 2, title: 'Sprint board updated with new tasks', time: '16m ago', read: false },
-    { id: 3, title: 'Daily standup starts in 20 minutes', time: '1h ago', read: true }
-  ])
-  const notificationRef = useRef(null)
-  const assigneeDropdownRef = useRef(null)
-  const typeDropdownRef = useRef(null)
+  const [projects, setProjects] = useState([])
+  const [issues, setIssues] = useState([])
+  const [assigneeFilter, setAssigneeFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const notificationCount = useNotificationCount()
   const projectFromState = location.state?.project
-  const activeProject = projectFromState || {
-    id: projectId || 'KPM',
-    name: 'KavyaProMan 360'
+
+  useEffect(() => {
+    const storedProjects = getStoredJson(projectStorageKey, [])
+    setProjects(Array.isArray(storedProjects) ? storedProjects : [])
+  }, [projectStorageKey])
+
+  const activeProject = useMemo(() => {
+    if (projectFromState?.id) {
+      return {
+        ...projectFromState,
+        id: normalizeProjectKey(projectFromState.id),
+        name: projectFromState.name || projectFromState.id
+      }
+    }
+
+    const normalizedRouteId = normalizeProjectKey(projectId || '')
+    const projectFromStorage = projects.find((project) => normalizeProjectKey(project?.id) === normalizedRouteId)
+
+    if (projectFromStorage) {
+      return {
+        ...projectFromStorage,
+        id: normalizeProjectKey(projectFromStorage.id),
+        name: projectFromStorage.name || projectFromStorage.id
+      }
+    }
+
+    return {
+      id: normalizedRouteId || 'KPM',
+      name: normalizedRouteId || 'Project'
+    }
+  }, [projectFromState, projectId, projects])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadIssues() {
+      let allIssues = []
+      try {
+        const response = await fetch(`${API_BASE}/api/issues`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch issues')
+        }
+        allIssues = await response.json()
+      } catch {
+        allIssues = getStoredJson('myIssues', [])
+      }
+
+      const issueList = Array.isArray(allIssues) ? allIssues : []
+      const filtered = issueList.filter((issue) => {
+        const resolvedId = resolveProjectId(issue?.project, projects)
+        if (resolvedId) {
+          return normalizeProjectKey(resolvedId) === activeProject.id
+        }
+
+        const issueProject = normalizeText(issue?.project)
+        return (
+          issueProject === normalizeText(activeProject.id) ||
+          issueProject === normalizeText(activeProject.name)
+        )
+      })
+
+      if (!cancelled) {
+        setIssues(filtered)
+      }
+    }
+
+    if (activeProject?.id) {
+      loadIssues()
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [API_BASE, activeProject.id, activeProject.name, projects])
+
+  const assigneeOptions = useMemo(() => {
+    const set = new Set()
+    issues.forEach((issue) => {
+      const assignee = String(issue?.creatorName || issue?.assignee || 'Unassigned').trim()
+      if (assignee) {
+        set.add(assignee)
+      }
+    })
+    return Array.from(set)
+  }, [issues])
+
+  const typeOptions = useMemo(() => {
+    const set = new Set()
+    issues.forEach((issue) => {
+      set.add(normalizeIssueType(issue?.issueType || issue?.type))
+    })
+    return Array.from(set)
+  }, [issues])
+
+  const boardColumns = useMemo(() => {
+    const columns = BOARD_COLUMNS.map((column) => ({
+      ...column,
+      issues: []
+    }))
+    const map = new Map(columns.map((column) => [column.key, column]))
+
+    issues.forEach((issue, index) => {
+      const type = normalizeIssueType(issue?.issueType || issue?.type)
+      const columnKey = resolveColumnKey(issue)
+      const column = map.get(columnKey) || map.get('todo')
+      const issueKey = buildIssueKey(issue, activeProject.id, index)
+      const summary = String(issue?.summary || issue?.title || 'Untitled issue').trim()
+      const difficulty = normalizeText(issue?.difficulty)
+      const labels = [type]
+      if (difficulty) {
+        labels.push(difficulty)
+      }
+
+      const assignee = issue?.creatorName || issue?.assignee || 'Unassigned'
+      if (normalizeText(assigneeFilter) !== 'all' && normalizeText(assignee) !== normalizeText(assigneeFilter)) {
+        return
+      }
+
+      if (typeFilter !== 'all' && type !== typeFilter) {
+        return
+      }
+
+      column.issues.push({
+        id: issueKey,
+        type,
+        typeLabel: ISSUE_TYPE_ICONS[type] || ISSUE_TYPE_ICONS.task,
+        title: summary,
+        labels,
+        assignee,
+        points: getIssuePoints(issue),
+        priority: getIssuePriority(issue)
+      })
+    })
+
+    return columns
+  }, [issues, activeProject.id, assigneeFilter, typeFilter])
+
+  function handleCreateIssue() {
+    navigate('/dashboard')
+  }
+
+  function handleResetFilters() {
+    setAssigneeFilter('all')
+    setTypeFilter('all')
   }
   const activeFilterCount =
     selectedFilters.status.length +
@@ -350,40 +564,11 @@ export default function Board() {
               <input className="form-control" placeholder="Search issues, projects..." aria-label="Search issues and projects" />
             </div>
 
-            <div className="notification-wrapper me-2" ref={notificationRef}>
-              <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications} type="button">
-                <FiBell size={20} />
-              </button>
-              {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
+            <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications" onClick={() => navigate('/all-my-issues')}>
+              <FiBell size={20} />
+            </button>
 
-              {showNotifications && (
-                <div className="notification-dropdown">
-                  <div className="notification-header">
-                    <span>Notifications</span>
-                    {unreadCount > 0 && (
-                      <button className="mark-all-btn" type="button" onClick={markAllNotificationsRead}>
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-                  <div className="notification-list">
-                    {notifications.map((item) => (
-                      <button
-                        key={item.id}
-                        className={`notification-item-row ${item.read ? 'read' : 'unread'}`}
-                        onClick={() => markNotificationRead(item.id)}
-                        type="button"
-                      >
-                        <div className="notification-title">{item.title}</div>
-                        <div className="notification-time">{item.time}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <button className="btn create-issue-medium" onClick={() => navigate('/create-issue')}>
+            <button className="btn create-issue-medium" onClick={handleCreateIssue}>
               <FiPlus className="me-1" /> Create Issue
             </button>
           </div>
@@ -398,87 +583,34 @@ export default function Board() {
 
           <div className="board-title-row">
             <div>
-              <h1>Sprint 2 - Board Implementation</h1>
+              <h1>{activeProject.name} Board</h1>
             </div>
             <div className="board-title-actions">
-            
-              <button className="btn board-outline-btn" onClick={() => navigate(`/projects/${activeProject.id}/backlog`, { state: { project: activeProject } })}>View Backlog</button>
-              <button className="btn board-outline-btn" onClick={() => setShowFilters(true)}>
-                <FiFilter size={15} /> More Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              <button className="btn create-issue-medium" onClick={handleCreateIssue}>
+                <FiPlus className="me-1" /> Create Issue
               </button>
+              <button className="btn board-outline-btn" onClick={() => navigate(`/projects/${activeProject.id}/backlog`, { state: { project: activeProject } })}>View Backlog</button>
+              <button className="btn board-outline-btn" onClick={handleResetFilters}><FiFilter size={15} /> Reset Filters</button>
             </div>
           </div>
 
           <div className="board-filter-row">
-            <div className="board-filter-dropdown" ref={assigneeDropdownRef}>
-              <button className="board-filter-pill" type="button" onClick={() => {
-                setShowAssigneeDropdown((value) => !value)
-                setShowTypeDropdown(false)
-              }}>
-                <FiUsers size={15} />
-                <span>{selectedFilters.assignee.length ? `${selectedFilters.assignee.length} assignee(s)` : 'All Assignees'}</span>
-                <FiChevronDown size={15} />
-              </button>
-              {showAssigneeDropdown && (
-                <div className="board-pill-dropdown">
-                  <button
-                    className="board-pill-item"
-                    type="button"
-                    onClick={() => {
-                      setSelectedFilters((current) => ({ ...current, assignee: [] }))
-                      setShowAssigneeDropdown(false)
-                    }}
-                  >
-                    All Assignees
-                  </button>
-                  {allAssignees.map((assignee) => (
-                    <label key={assignee} className="board-pill-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.assignee.includes(assignee)}
-                        onChange={() => toggleFilter('assignee', assignee)}
-                      />
-                      <span>{assignee}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="board-filter-dropdown" ref={typeDropdownRef}>
-              <button className="board-filter-pill" type="button" onClick={() => {
-                setShowTypeDropdown((value) => !value)
-                setShowAssigneeDropdown(false)
-              }}>
-                <FiTag size={15} />
-                <span>{selectedFilters.type.length ? `${selectedFilters.type.length} type(s)` : 'All Types'}</span>
-                <FiChevronDown size={15} />
-              </button>
-              {showTypeDropdown && (
-                <div className="board-pill-dropdown">
-                  <button
-                    className="board-pill-item"
-                    type="button"
-                    onClick={() => {
-                      setSelectedFilters((current) => ({ ...current, type: [] }))
-                      setShowTypeDropdown(false)
-                    }}
-                  >
-                    All Types
-                  </button>
-                  {allTypes.map((type) => (
-                    <label key={type} className="board-pill-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.type.includes(type)}
-                        onChange={() => toggleFilter('type', type)}
-                      />
-                      <span>{formatTypeLabel(type)}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+            <button
+              className="board-filter-pill"
+              onClick={() => setAssigneeFilter((current) => cycleFilterValue(current, ['all', ...assigneeOptions]))}
+            >
+              <FiUsers size={15} />
+              <span>{assigneeFilter === 'all' ? 'All Assignees' : assigneeFilter}</span>
+              <FiChevronDown size={15} />
+            </button>
+            <button
+              className="board-filter-pill"
+              onClick={() => setTypeFilter((current) => cycleFilterValue(current, ['all', ...typeOptions]))}
+            >
+              <FiTag size={15} />
+              <span>{typeFilter === 'all' ? 'All Types' : formatTypeLabel(typeFilter)}</span>
+              <FiChevronDown size={15} />
+            </button>
           </div>
 
           {showFilters && (
@@ -568,20 +700,22 @@ export default function Board() {
 
           <div className="board-columns-scroll">
             <div className="board-columns-track">
-              {filteredColumns.map((column) => (
+              {boardColumns.map((column) => (
                 <section key={column.key} className={`board-column board-column-${column.tone}`}>
                   <header className="board-column-head">
                     <div className="board-column-title-wrap">
                       <h2>{column.title}</h2>
                       <span className="board-column-count">{column.issues.length}</span>
                     </div>
-                    <button className="board-column-add" aria-label={`Add issue to ${column.title}`}>
+                    <button className="board-column-add" aria-label={`Add issue to ${column.title}`} onClick={handleCreateIssue}>
                       <FiPlus size={18} />
                     </button>
                   </header>
 
                   <div className="board-column-body">
-                    {column.issues.map((issue) => (
+                    {column.issues.length === 0 ? (
+                      <div className="board-column-empty">No issues in this column.</div>
+                    ) : column.issues.map((issue) => (
                       <article key={issue.id} className={`board-issue-card board-priority-${issue.priority}`}>
                         <div className="board-issue-key-row">
                           <span className={`board-issue-type board-issue-${issue.type}`}>{issue.typeLabel}</span>
@@ -592,7 +726,7 @@ export default function Board() {
 
                         <div className="board-issue-labels">
                           {issue.labels.map((label) => (
-                            <span key={label} className="board-issue-label">{label}</span>
+                            <span key={`${issue.id}-${label}`} className="board-issue-label">{label}</span>
                           ))}
                         </div>
 

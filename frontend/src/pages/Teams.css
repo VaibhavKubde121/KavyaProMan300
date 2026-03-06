@@ -56,8 +56,44 @@
 .top-search-medium .form-control::placeholder{color:#9ca3af}
 
 /* Bell and Create Issue styles (matching Dashboard) */
-.bell-black{color:#000 !important;position:relative}
-.bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
+button.bell-black{
+  align-items:center !important;
+  background:#edeff2 !important;
+  border:none !important;
+  border-radius:0 !important;
+  color:#111827 !important;
+  display:inline-flex !important;
+  flex:0 0 72px !important;
+  height:56px !important;
+  justify-content:center !important;
+  line-height:1 !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  padding:0 !important;
+  position:relative !important;
+  text-decoration:none !important;
+  width:72px !important;
+}
+button.bell-black svg{
+  height:22px !important;
+  stroke-width:2.1 !important;
+  width:22px !important;
+}
+button.bell-black:hover{background:#e7eaee !important}
+button.bell-black:focus-visible{outline:2px solid #cbd5e1;outline-offset:2px}
+button.bell-black::after{content:none}
+button.bell-black.has-notifications::after{
+  background:#ff5a66 !important;
+  border-radius:50% !important;
+  box-shadow:0 0 0 3px rgba(255,90,102,0.25) !important;
+  content:'' !important;
+  height:10px !important;
+  left:auto !important;
+  position:absolute !important;
+  right:20px !important;
+  top:12px !important;
+  width:10px !important;
+}
 .create-issue-medium{background:#05060a !important;color:#fff !important;border:none !important;min-width:180px;padding:10px 18px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 .create-issue-medium:hover{background:#000 !important}
 
@@ -568,8 +604,6 @@
   .top-search-medium{flex:0 0 48px;max-width:48px;width:48px;padding:6px;border-radius:12px;justify-content:center;background:transparent}
   .top-search-medium .input-group-text{background:#eaf4ff;border-radius:10px;padding:6px;display:flex;align-items:center;justify-content:center;box-shadow:none;border:0}
   .top-search-medium input{display:none}
-  .bell-black{color:#000 !important;position:relative;margin-left:6px}
-  .bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
   .create-issue-medium{min-width:120px;padding:8px 10px;font-size:13px;border-radius:8px;background:#05060a !important;color:#fff !important;border:none !important;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 }
 
@@ -689,64 +723,4 @@
   background: #fee2e2;
   color: #dc2626;
   border: 1px solid #fecaca;
-}
-
-html[data-theme='dark'] .modal-content {
-  background: #000000 !important;
-  border: 1px solid #ffffff !important;
-}
-
-html[data-theme='dark'] .modal-header,
-html[data-theme='dark'] .modal-footer {
-  border-color: #1f2937 !important;
-}
-
-html[data-theme='dark'] .modal-header h2,
-html[data-theme='dark'] .form-group label,
-html[data-theme='dark'] .modal-close {
-  color: #ffffff !important;
-}
-
-html[data-theme='dark'] .modal-close:hover {
-  color: #ffffff !important;
-}
-
-html[data-theme='dark'] .form-group input,
-html[data-theme='dark'] .form-group select {
-  background: #000000 !important;
-  border: 1px solid #374151 !important;
-  color: #ffffff !important;
-}
-
-html[data-theme='dark'] .form-group input::placeholder {
-  color: #9ca3af !important;
-}
-
-html[data-theme='dark'] .btn-cancel,
-html[data-theme='dark'] .btn-invite {
-  background: #000000 !important;
-  border: 1px solid #ffffff !important;
-  color: #ffffff !important;
-}
-
-html[data-theme='dark'] .edit-btn {
-  background: #000000 !important;
-  border: 1px solid #ffffff !important;
-  color: #ffffff !important;
-}
-
-html[data-theme='dark'] .edit-btn:hover {
-  background: #111827 !important;
-  border-color: #ffffff !important;
-  color: #ffffff !important;
-}
-
-html[data-theme='dark'] .role.tester {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border: 1px solid #ffffff !important;
-}
-
-html[data-theme='dark'] .member-stat strong {
-  color: #ffffff !important;
 }

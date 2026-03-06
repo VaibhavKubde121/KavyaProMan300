@@ -8,8 +8,40 @@
 .top-search-medium { display:flex; align-items:center; background:#fff; padding:6px 10px; border-radius:10px; box-shadow:0 8px 20px rgba(12,23,36,0.04); width:420px; }
 .top-search-medium input { border:0; outline:none; }
 .btn.create-issue-medium { background:#0b1226; color:#fff; border-radius:10px; padding:10px 16px; border:0; box-shadow:0 8px 30px rgba(11,18,38,0.08); }
-.bell-black { color:#212529; position:relative; }
-.bell-black::after { content:''; width:8px; height:8px; background:#ff4757; border-radius:50%; display:inline-block; position:relative; left:6px; top:-6px; }
+button.bell-black{
+	align-items:center !important;
+	background:#edeff2 !important;
+	border:none !important;
+	border-radius:0 !important;
+	color:#111827 !important;
+	display:inline-flex !important;
+	flex:0 0 72px !important;
+	height:56px !important;
+	justify-content:center !important;
+	line-height:1 !important;
+	margin-left:0 !important;
+	margin-right:0 !important;
+	padding:0 !important;
+	position:relative !important;
+	text-decoration:none !important;
+	width:72px !important;
+}
+button.bell-black svg{width:22px !important;height:22px !important;stroke-width:2.1 !important}
+button.bell-black:hover{background:#e7eaee !important}
+button.bell-black:focus-visible{outline:2px solid #cbd5e1;outline-offset:2px}
+button.bell-black::after{content:none}
+button.bell-black.has-notifications::after{
+	content:'' !important;
+	width:10px !important;
+	height:10px !important;
+	background:#ff5a66 !important;
+	border-radius:50% !important;
+	box-shadow:0 0 0 3px rgba(255,90,102,0.25) !important;
+	position:absolute !important;
+	left:auto !important;
+	right:20px !important;
+	top:12px !important;
+}
 
 .notification-wrapper{position:relative}
 .notif-count{
@@ -278,7 +310,5 @@
 	.top-search-medium{flex:0 0 48px;max-width:48px;width:48px;padding:6px;border-radius:12px;justify-content:center;background:transparent}
 	.top-search-medium .input-group-text{background:#eaf4ff;border-radius:10px;padding:6px;display:flex;align-items:center;justify-content:center;box-shadow:none;border:0}
 	.top-search-medium input{display:none}
-	.bell-black{color:#000 !important;position:relative;margin-left:6px}
-	.bell-black::after{content:'';width:8px;height:8px;border-radius:50%;background:#ff3b30;position:absolute;right:-6px;top:-6px;box-shadow:0 0 0 4px rgba(255,59,48,0.12)}
 	.btn.create-issue-medium{min-width:120px;padding:8px 10px;font-size:13px;border-radius:8px;background:#0b1226 !important;color:#fff !important;border:none !important;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
 }

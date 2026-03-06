@@ -21,6 +21,8 @@ import Board from './pages/Board'
 import Backlog from './pages/Backlog'
 import Reports from './pages/Reports'
 import Subscription from './pages/Subscription'
+import AllMyIssues from './pages/AllMyIssues'
+import PaymentMethod from './pages/PaymentMethod'
 import ContactSales from './pages/ContactSales'
 
 function App() {
@@ -51,9 +53,12 @@ function App() {
         <Route path="/projects/:projectId/board" element={<Board />} />
         <Route path="/projects/:projectId/backlog" element={<Backlog />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/create-issue" element={<Dashboard initialShowCreate={true} />} />
-        <Route path="/create-issue/" element={<Dashboard initialShowCreate={true} />} />
+        <Route path="/subscription" element={<Subscription />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/all-my-issues" element={<AllMyIssues />} />
+        <Route path="/payment" element={<PaymentMethod />} />
+        <Route path="/contact-sales" element={<ContactSales />} />
+        <Route path="/create-issue" element={<Navigate to="/dashboard" replace />} />
         <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
         <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
       </Routes>

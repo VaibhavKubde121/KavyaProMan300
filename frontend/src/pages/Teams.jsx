@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import "./Teams.css";
 import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiSearch, FiBell, FiPlus, FiUser, FiX, FiCheck, FiRepeat, FiArrowRight } from 'react-icons/fi'
 import { NavLink } from 'react-router-dom'
+import useNotificationCount from '../hooks/useNotificationCount'
 
 const FALLBACK_MEMBERS = [
   { id: 1, name: 'Sarah Johnson', email: 'sarah.johnson@kavyapro.com', role: 'Admin', projects: 3, activeIssues: 8, image: 'https://randomuser.me/api/portraits/women/44.jpg' },
@@ -29,7 +30,7 @@ export default function Teams() {
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [selectedOrg, setSelectedOrg] = useState(() => { try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null } })
+  const notificationCount = useNotificationCount()
 
   useEffect(() => {
     function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
@@ -418,38 +419,9 @@ export default function Teams() {
                     )}
                   </div>
 
-                  <div className="notification-wrapper me-2" ref={notificationRef}>
-                    <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications}>
-                      <FiBell size={20} />
-                      {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
-                    </button>
-
-                    {showNotifications && (
-                      <div className="notification-dropdown">
-                        <div className="notification-header">
-                          <span>Notifications</span>
-                          {unreadCount > 0 && (
-                            <button className="mark-all-btn" onClick={markAllAsRead}>
-                              Mark all read
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="notification-list">
-                          {notifications.map((n) => (
-                            <button
-                              key={n.id}
-                              className={`notification-item-row ${n.read ? "read" : "unread"}`}
-                              onClick={() => markAsRead(n.id)}
-                            >
-                              <div className="notification-title">{n.title}</div>
-                              <div className="notification-time">{n.time}</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
+                    <FiBell size={20} />
+                  </button>
 
                   <button className="btn create-issue-medium" onClick={() => navigate('/create-issue')}>
                     <FiPlus className="me-1" /> Create Issue

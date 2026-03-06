@@ -4,6 +4,7 @@ import { FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLog
 import { NavLink } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
+import useNotificationCount from '../hooks/useNotificationCount'
 
 export default function Dashboard({ initialShowCreate = false }) {
   const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
@@ -17,15 +18,8 @@ export default function Dashboard({ initialShowCreate = false }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [showCreate, setShowCreate] = useState(initialShowCreate)
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
-  const [topSearchText, setTopSearchText] = useState('')
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Issue KPM-7 assigned to you', time: '2m ago', read: false },
-    { id: 2, title: 'Sprint planning starts in 30 minutes', time: '15m ago', read: false },
-    { id: 3, title: 'Michael commented on KPM-3', time: '1h ago', read: true }
-  ])
+  const [showCreate, setShowCreate] = useState(false)
+  const notificationCount = useNotificationCount()
   const [attachments, setAttachments] = useState([])
   const [avatar, setAvatar] = useState('')
   useEffect(() => {
@@ -458,35 +452,9 @@ export default function Dashboard({ initialShowCreate = false }) {
                 )}
               </div>
 
-              <div className="notification-wrapper me-2" ref={notificationRef}>
-                <button className="btn btn-link bell-black" title="Notifications" onClick={toggleNotifications}>
-                  <FiBell size={20} />
-                  {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
-                </button>
-
-                {showNotifications && (
-                  <div className="notification-dropdown">
-                    <div className="notification-header">
-                      <span>Notifications</span>
-                      {unreadCount > 0 && (
-                        <button className="mark-all-btn" onClick={markAllAsRead}>Mark all read</button>
-                      )}
-                    </div>
-                    <div className="notification-list">
-                      {notifications.map((n) => (
-                        <button
-                          key={n.id}
-                          className={`notification-item-row ${n.read ? 'read' : 'unread'}`}
-                          onClick={() => markAsRead(n.id)}
-                        >
-                          <div className="notification-title">{n.title}</div>
-                          <div className="notification-time">{n.time}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
+                <FiBell size={20} />
+              </button>
 
               <button className="btn create-issue-medium" onClick={() => setShowCreate(true)}>
                 <FiPlus className="me-1" /> Create Issue
