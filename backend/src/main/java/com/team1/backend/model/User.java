@@ -35,6 +35,12 @@ public class User {
     @Column(nullable = false)
     private String timezone = "UTC";
 
+    @Column(nullable = false)
+    private boolean verified = false;
+
+    @Column(length = 32)
+    private String verificationCode;
+
     public User() {}
 
     public User(String name, String email, String password) {
@@ -107,5 +113,21 @@ public class User {
 
     public void setTimezone(String timezone) {
         this.timezone = timezone;
+    }
+
+    public boolean isVerified() {
+        return verified;
+    }
+
+    public void setVerified(boolean verified) {
+        this.verified = verified;
+    }
+
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
     }
 }
