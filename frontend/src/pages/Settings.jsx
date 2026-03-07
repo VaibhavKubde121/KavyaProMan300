@@ -49,20 +49,23 @@ export default function Settings() {
     return () => window.removeEventListener('org:changed', onOrgChanged)
   }, [])
 
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
+
 const user = JSON.parse(localStorage.getItem('user') || 'null')
 const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
   const handleLogout = () => {
     // TODO: wire up real logout logic
     console.log('logout clicked')
     navigate('/login')
-  }
-
-  function toggleSidebarForScreen() {
-    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
-      setCollapsed(s => !s)
-    } else {
-      setMobileOpen(s => !s)
-    }
   }
 
   return (
@@ -146,7 +149,7 @@ const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Gue
       )}
 
       {/* mobile toggle (visible on small/medium screens) */}
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar">
         <FiMenu size={18} />
       </button>
 

@@ -4,6 +4,7 @@ import {
   FiGrid,
   FiFolder,
   FiUsers,
+  FiUser,
   FiBarChart2,
   FiCreditCard,
   FiSettings,
@@ -43,8 +44,7 @@ const Reports = () => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [topSearchText, setTopSearchText] = useState("");
   const [selectedProject, setSelectedProject] = useState("KavyaProMan 360");
-  const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
+  
 
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
@@ -165,15 +165,7 @@ const Reports = () => {
     );
   };
 
-  const toggleSidebarForScreen = () => {
-    if (typeof window !== "undefined" && window.innerWidth >= 992) {
-      setCollapsed(prev => !prev);
-    } else {
-      setMobileOpen(prev => !prev);
-    }
-  };
-
-  const isMobileScreen = () => typeof window !== "undefined" && window.innerWidth <= 768;
+  const isMobileScreen = () => typeof window !== "undefined" && window.innerWidth <= 992;
 
   return (
     <div className="dashboard-root d-flex">
@@ -239,7 +231,7 @@ const Reports = () => {
         </div>
       </aside>
 
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar" type="button">
+      <button className="mobile-toggle btn btn-sm" aria-label="Toggle sidebar" type="button">
         <FiMenu size={18} />
       </button>
 

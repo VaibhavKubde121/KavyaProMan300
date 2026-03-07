@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import './Dashboard.css'
 import './Board.css'
@@ -224,6 +224,16 @@ function getInitials(name) {
     .join('')
 }
 
+function createEmptyFilters() {
+  return {
+    status: [],
+    type: [],
+    priority: [],
+    assignee: [],
+    label: []
+  }
+}
+
 export default function Board() {
   const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || 'http://localhost:8080'
   const navigate = useNavigate()
@@ -234,10 +244,25 @@ export default function Board() {
   const selectedOrg = typeof window !== 'undefined' ? getStoredJson('org', null) : null
   const projectStorageKey = useMemo(() => buildStorageKey(selectedOrg), [selectedOrg])
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [projects, setProjects] = useState([])
   const [issues, setIssues] = useState([])
   const [assigneeFilter, setAssigneeFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [topSearchText, setTopSearchText] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedFilters, setSelectedFilters] = useState(createEmptyFilters)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Board updated for selected project', time: '5m ago', read: false },
+    { id: 2, title: 'Issue moved to In Progress', time: '20m ago', read: true }
+  ])
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false)
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false)
+  const notificationRef = useRef(null)
+  const assigneeDropdownRef = useRef(null)
+  const typeDropdownRef = useRef(null)
   const notificationCount = useNotificationCount()
   const projectFromState = location.state?.project
 
@@ -245,6 +270,16 @@ export default function Board() {
     const storedProjects = getStoredJson(projectStorageKey, [])
     setProjects(Array.isArray(storedProjects) ? storedProjects : [])
   }, [projectStorageKey])
+
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
 
   const activeProject = useMemo(() => {
     if (projectFromState?.id) {
@@ -385,6 +420,10 @@ export default function Board() {
     setAssigneeFilter('all')
     setTypeFilter('all')
   }
+
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 992
+  }
   const activeFilterCount =
     selectedFilters.status.length +
     selectedFilters.type.length +
@@ -394,20 +433,20 @@ export default function Board() {
   const unreadCount = notifications.filter((item) => !item.read).length
 
   const allAssignees = useMemo(() => (
-    [...new Set(BOARD_COLUMNS.flatMap((column) => column.issues.map((issue) => issue.assignee)))]
-  ), [])
+    [...new Set(boardColumns.flatMap((column) => column.issues.map((issue) => issue.assignee)))]
+  ), [boardColumns])
   const allTypes = useMemo(() => (
-    [...new Set(BOARD_COLUMNS.flatMap((column) => column.issues.map((issue) => issue.type)))]
-  ), [])
+    [...new Set(boardColumns.flatMap((column) => column.issues.map((issue) => issue.type)))]
+  ), [boardColumns])
 
   const allLabels = useMemo(() => (
-    [...new Set(BOARD_COLUMNS.flatMap((column) => column.issues.flatMap((issue) => issue.labels)))]
-  ), [])
+    [...new Set(boardColumns.flatMap((column) => column.issues.flatMap((issue) => issue.labels)))]
+  ), [boardColumns])
 
   const filteredColumns = useMemo(() => {
     const hasStatusFilter = selectedFilters.status.length > 0
 
-    return BOARD_COLUMNS
+    return boardColumns
       .filter((column) => !hasStatusFilter || selectedFilters.status.includes(column.key))
       .map((column) => ({
         ...column,
@@ -419,7 +458,7 @@ export default function Board() {
           return typeMatch && priorityMatch && assigneeMatch && labelMatch
         })
       }))
-  }, [selectedFilters])
+  }, [selectedFilters, boardColumns])
 
   function handleLogout() {
     localStorage.removeItem('user')
@@ -478,7 +517,7 @@ export default function Board() {
 
   return (
     <div className="board-page-root dashboard-root d-flex">
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -556,12 +595,41 @@ export default function Board() {
         <FiMenu size={18} />
       </button>
 
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
+
       <main className={`content board-content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="board-top-strip">
-          <div className="top-search-row">
-            <div className="input-group top-search-medium">
+          <div className={`top-search-row ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+            <div
+              className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+              onClick={() => {
+                if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+              }}
+            >
               <span className="input-group-text"><FiSearch /></span>
-              <input className="form-control" placeholder="Search issues, projects..." aria-label="Search issues and projects" />
+              <input
+                className="form-control"
+                placeholder="Search issues, projects..."
+                aria-label="Search issues and projects"
+                value={topSearchText}
+                onChange={(event) => setTopSearchText(event.target.value)}
+                onFocus={() => {
+                  if (isMobileScreen()) setMobileSearchOpen(true)
+                }}
+              />
+              {mobileSearchOpen && (
+                <button
+                  type="button"
+                  className="dashboard-search-close"
+                  aria-label="Close search"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setMobileSearchOpen(false)
+                  }}
+                >
+                  <FiX size={16} />
+                </button>
+              )}
             </div>
 
             <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications" onClick={() => navigate('/all-my-issues')}>
@@ -700,7 +768,7 @@ export default function Board() {
 
           <div className="board-columns-scroll">
             <div className="board-columns-track">
-              {boardColumns.map((column) => (
+              {filteredColumns.map((column) => (
                 <section key={column.key} className={`board-column board-column-${column.tone}`}>
                   <header className="board-column-head">
                     <div className="board-column-title-wrap">

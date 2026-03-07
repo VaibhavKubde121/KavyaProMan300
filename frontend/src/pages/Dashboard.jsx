@@ -69,7 +69,13 @@ export default function Dashboard({ initialShowCreate = false }) {
   const [savedFilters, setSavedFilters] = useState([])
   const fileInputRef = useRef(null)
   const notificationRef = useRef(null)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Welcome to KavyaProMan', time: 'just now', read: false }
+  ])
   const unreadCount = notifications.filter(n => !n.read).length
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [topSearchText, setTopSearchText] = useState("")
   const activeFilterCount =
     selectedFilters.status.length +
     selectedFilters.issueType.length +
@@ -246,7 +252,7 @@ export default function Dashboard({ initialShowCreate = false }) {
   }
 
   function isMobileScreen() {
-    return typeof window !== 'undefined' && window.innerWidth <= 768
+    return typeof window !== 'undefined' && window.innerWidth <= 992
   }
 
   function toggleFilterSelection(group, value) {

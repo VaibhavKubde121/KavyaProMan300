@@ -96,10 +96,10 @@ export default function Login() {
           <a className="muted" href="/forgot-password">Forgot password?</a>
         </div>
         <button className="auth-btn" type="submit">Sign In</button>
-        <div className="divider">Or continue with</div>
-        <div className="auth-socials">
-          <button className="social">Google</button>
-          <button className="social">GitHub</button>
+        <div className="divider mt-3">Or continue with</div>
+        <div className="auth-socials mt-3">
+          <button className="social mt-3">Google</button>
+          <button className="social mt-3">GitHub</button>
         </div>
         <div className="auth-foot">Don't have an account? <a href="/register">Sign up</a></div>
       </form>

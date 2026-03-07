@@ -255,6 +255,7 @@ export default function Project() {
   const [showArchivedProjects, setShowArchivedProjects] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [formError, setFormError] = useState('')
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const notificationCount = useNotificationCount()
 
   useEffect(() => {
@@ -262,6 +263,16 @@ export default function Project() {
       navigate('/login', { replace: true })
     }
   }, [user, navigate])
+
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
 
   useEffect(() => {
     const stored = getStoredJson(projectStorageKey, null)
@@ -353,14 +364,6 @@ export default function Project() {
   function handleLogout() {
     localStorage.removeItem('user')
     navigate('/login', { replace: true })
-  }
-
-  function toggleSidebarForScreen() {
-    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
-      setCollapsed((value) => !value)
-    } else {
-      setMobileOpen((value) => !value)
-    }
   }
 
   function resetCreateForm() {
@@ -515,14 +518,6 @@ export default function Project() {
 
   function markAllNotificationsRead() {
     setNotifications((current) => current.map((item) => ({ ...item, read: true })))
-  }
-
-  function toggleSidebarForScreen() {
-    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
-      setCollapsed((value) => !value)
-    } else {
-      setMobileOpen((value) => !value)
-    }
   }
 
   function isMobileScreen() {
@@ -873,10 +868,6 @@ export default function Project() {
         </div>
       )}
 
-      <button className="mobile-toggle btn btn-sm" onClick={toggleSidebarForScreen} aria-label="Toggle sidebar">
-        <FiMenu size={18} />
-      </button>
-
       <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
 
       <main className={`content project-content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
@@ -895,7 +886,23 @@ export default function Project() {
                 aria-label="Search projects"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
+                onFocus={() => {
+                  if (isMobileScreen()) setMobileSearchOpen(true)
+                }}
               />
+              {mobileSearchOpen && (
+                <button
+                  type="button"
+                  className="project-search-close"
+                  aria-label="Close search"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setMobileSearchOpen(false)
+                  }}
+                >
+                  <FiX size={16} />
+                </button>
+              )}
             </div>
 
             <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">

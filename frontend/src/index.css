@@ -175,3 +175,36 @@ html[data-theme='dark'] .recharts-cartesian-grid line{
   stroke:#334155 !important;
 }
 
+html[data-theme='dark'] button.bell-black,
+html[data-theme='dark'] .bell-black{
+  background:transparent !important;
+  box-shadow:none !important;
+  color:var(--text) !important;
+}
+
+html[data-theme='dark'] button.bell-black:hover,
+html[data-theme='dark'] .bell-black:hover{
+  background:transparent !important;
+}
+
+/* Dark mode: keep search bar border thin and avoid double-thick left icon border */
+html[data-theme='dark'] .top-search-medium,
+html[data-theme='dark'] .top-search-medium.input-group{
+  border:1px solid rgba(255,255,255,0.2) !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+html[data-theme='dark'] .top-search-medium .input-group-text{
+  border:0 !important;
+  background:transparent !important;
+}
+
+html[data-theme='dark'] .top-search-medium .form-control{
+  background:transparent !important;
+}
+
+html[data-theme='dark'] .create-issue-medium{
+  border:1px solid rgba(255,255,255,0.35) !important;
+}
+

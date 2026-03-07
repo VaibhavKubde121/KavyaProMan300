@@ -87,6 +87,37 @@
   font-weight: 600;
 }
 
+/* Responsive card sizing */
+@media (max-width: 1200px) {
+  .reports-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .reports-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .report-card {
+    padding: 18px 16px;
+    gap: 12px;
+  }
+
+  .report-card h2 { font-size: 26px }
+  .report-card h4 { font-size: 13px }
+}
+
+@media (max-width: 600px) {
+  .reports-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .report-card { padding: 14px; border-radius: 12px }
+  .report-card h2 { font-size: 22px }
+  .report-card h4 { font-size: 13px }
+}
+
 /* ICON BOX BIGGER */
 .card-icon {
   font-size: 22px;     /* clean icon size */
@@ -211,6 +242,21 @@
   .dashboard-root > main.content.flex-grow-1.p-4 > .top-search-row.mb-4.mobile-search-open .create-issue-medium{
     display:none !important;
   }
+}
+
+/* Collapse distribution grid on smaller screens */
+@media (max-width: 768px) {
+  .distribution-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-chart { padding: 16px }
+}
+
+/* Ensure charts and containers are fluid */
+.reports-chart, .distribution-card, .report-card {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .reports-search-close{

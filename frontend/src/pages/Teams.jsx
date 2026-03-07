@@ -28,6 +28,9 @@ export default function Teams() {
   const navigate = useNavigate()
   const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Guest')
+  const [selectedOrg, setSelectedOrg] = useState(() => {
+    try { return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('org') || 'null') : null } catch (e) { return null }
+  })
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const notificationCount = useNotificationCount()
@@ -36,6 +39,17 @@ export default function Teams() {
     function onOrgChanged(e){ const org = e?.detail || null; setSelectedOrg(org); try { if (org) localStorage.setItem('org', JSON.stringify(org)) } catch(err){} }
     window.addEventListener('org:changed', onOrgChanged)
     return () => window.removeEventListener('org:changed', onOrgChanged)
+  }, [])
+
+  // sync sidebar state from global controller
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
   }, [])
 
   const [members, setMembers] = useState(FALLBACK_MEMBERS);
@@ -72,7 +86,7 @@ export default function Teams() {
     fetchTeamMembers();
   }, []);
 
-  // sync sidebar state from global controller
+  // recalculate stats when data changes
   useEffect(() => {
     setStats(calculateStats(members));
   }, [members]);
@@ -243,30 +257,7 @@ export default function Teams() {
     }
   };
 
-  // Notification handlers (were missing causing ReferenceError)
-  function toggleNotifications() {
-    setShowNotifications((s) => !s);
-  }
-
-  function markAllAsRead(e) {
-    e && e.stopPropagation && e.stopPropagation();
-    setNotifications((ns) => ns.map((n) => ({ ...n, read: true })));
-  }
-
-  function markAsRead(id) {
-    setNotifications((ns) => ns.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  }
-
-  // Close notifications when clicking outside
-  useEffect(() => {
-    function handleClickOutside(ev) {
-      if (notificationRef.current && !notificationRef.current.contains(ev.target)) {
-        setShowNotifications(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // (Notification handlers and outside-click listener are defined above)
 
   // Filter members based on search and role
   const filteredMembers = members.filter(member => {
@@ -281,16 +272,8 @@ export default function Teams() {
     navigate('/login', { replace: true })
   }
 
-  function toggleSidebarForScreen() {
-    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
-      setCollapsed(s => !s)
-    } else {
-      setMobileOpen(s => !s)
-    }
-  }
-
   function isMobileScreen() {
-    return typeof window !== 'undefined' && window.innerWidth <= 768
+    return typeof window !== 'undefined' && window.innerWidth <= 992
   }
 
   return (

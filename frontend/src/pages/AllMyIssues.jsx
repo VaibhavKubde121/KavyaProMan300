@@ -15,6 +15,15 @@ export default function AllMyIssues(){
     window.addEventListener('org:changed', onOrgChanged)
     return () => window.removeEventListener('org:changed', onOrgChanged)
   }, [])
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [editingIndex, setEditingIndex] = useState(-1)
@@ -170,14 +179,6 @@ export default function AllMyIssues(){
   function handleLogout(){
     localStorage.removeItem('user')
     navigate('/login', { replace: true })
-  }
-
-  function toggleSidebarForScreen() {
-    if (typeof window !== 'undefined' && window.innerWidth >= 992) {
-      setCollapsed(s => !s)
-    } else {
-      setMobileOpen(s => !s)
-    }
   }
 
   function handleDifficultyChange(idx, level){
