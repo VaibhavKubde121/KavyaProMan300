@@ -57,8 +57,8 @@
 .auth-error{background:#ffe5e5;color:#a00;padding:8px;border-radius:6px;margin-bottom:8px}
 .auth-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
 .auth-foot{margin-top:14px;text-align:center}
-.divider{margin:18px 0;text-align:center;color:#9ca3af}
-.auth-socials{display:flex;gap:12px}
+.divider{margin:18px 0 26px;text-align:center;color:#9ca3af}
+.auth-socials{display:flex;gap:12px;margin-top:12px}
 .social{flex:1;padding:10px;border-radius:8px;border:1px solid #e5e7eb;background:#fff}
 .remember{display:flex;align-items:center;gap:8px}
 
@@ -531,6 +531,15 @@ html[data-theme='dark'] .org-create-box p {
 html[data-theme='dark'] .org-create-box:hover {
   background: #000000 !important;
   border-color: #ffffff !important;
+}
+
+html[data-theme='dark'] .auth-root .auth-card {
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset !important;
+}
+
+html[data-theme='dark'] .auth-root .auth-btn {
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
 }
 
 /* RESPONSIVE */

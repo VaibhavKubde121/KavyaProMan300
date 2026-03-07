@@ -49,6 +49,13 @@
 .logout-badge:hover{background:linear-gradient(180deg,#fff,#fff);color:#b02a37;border-color:rgba(220,53,69,0.22);transform:translateY(-2px);box-shadow:0 12px 26px rgba(220,53,69,0.10)}
 .logout-badge:focus{outline:none;box-shadow:0 0 0 4px rgba(220,53,69,0.07)}
 
+/* Sidebar controls: use a thin light border consistently */
+.sidebar .nav .nav-item,
+.sidebar .switch-org-btn,
+.sidebar .logout-badge{
+  border:1px solid #e5eaf0 !important;
+}
+
 /* avatar icon */
 .avatar-icon{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6b5bff,#0d6efd);display:flex;align-items:center;justify-content:center;color:#fff;overflow:hidden}
 
@@ -321,6 +328,7 @@ button.bell-black.has-notifications::after{
 .task-list{display:flex;flex-direction:column;gap:12px;margin-top:6px}
 .task-row{display:flex;justify-content:space-between;color:#374151}
 .task-num{font-weight:700;color:#111827}
+html[data-theme='dark'] .task-card{background:transparent !important}
 
 .overdue-card{background:#fff7f7;border:1px solid #f8d7da}
 .overdue-card-body{display:flex;flex-direction:column;gap:12px;padding:22px}
@@ -363,6 +371,11 @@ button.bell-black.has-notifications::after{
 .large-info-card .info-card{background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,0.10);padding:28px 22px;box-shadow:0 6px 18px rgba(15,23,36,0.03)}
 .large-info-card h5{margin:0;font-size:20px;font-weight:700}
 .large-info-card .muted{color:#6b7280;margin-top:10px;font-size:15px}
+html[data-theme='dark'] .activity-item.highlight{background:transparent !important}
+html[data-theme='dark'] .activity-icon-square{background:rgba(239,68,68,0.08) !important}
+html[data-theme='dark'] .large-info-card .info-card{background:transparent !important}
+html[data-theme='dark'] .task-card{border:1px solid rgba(255,255,255,0.24) !important}
+html[data-theme='dark'] .large-info-card .info-card{border:1px solid rgba(255,255,255,0.24) !important}
 
 @media(max-width:900px){
   .large-info-card .info-card{padding:18px}

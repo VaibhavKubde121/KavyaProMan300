@@ -3,7 +3,7 @@ import './Subscription.css'
 import './Dashboard.css'
 import { FiSearch, FiBell, FiPlus, FiZap, FiStar, FiCheck, FiGrid, FiFolder, FiUsers, FiBarChart2, FiCreditCard, FiSettings, FiLogOut, FiMenu, FiUser, FiBriefcase, FiServer, FiDownload, FiArrowRight, FiChevronDown, FiX, FiRepeat } from 'react-icons/fi'
 import { GiCrown } from 'react-icons/gi'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import useNotificationCount from '../hooks/useNotificationCount'
 
 export default function Subscription() {
@@ -18,6 +18,7 @@ export default function Subscription() {
   const [period, setPeriod] = useState('monthly')
   const [selectedPlan, setSelectedPlan] = useState('professional')
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [topSearchText, setTopSearchText] = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [modalPlan, setModalPlan] = useState(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card')
@@ -70,6 +71,10 @@ export default function Subscription() {
     } else {
       setMobileOpen(s => !s)
     }
+  }
+
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 992
   }
 
   return (
@@ -144,10 +149,37 @@ export default function Subscription() {
         <div className="main-body">
           <header className="dash-header mb-4">
             <div>
-              <div className="top-search-row mb-3 d-flex align-items-center">
-                <div className="input-group top-search-medium">
-                  <span className="input-group-text" role="button" aria-label="Open search" onClick={() => setMobileSearchOpen(true)}><FiSearch /></span>
-                  <input className="form-control" placeholder="Search issues, projects..." aria-label="Search projects and issues" />
+              <div className={`top-search-row mb-3 d-flex align-items-center ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+                <div
+                  className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+                  onClick={() => {
+                    if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+                  }}
+                >
+                  <span className="input-group-text"><FiSearch /></span>
+                  <input
+                    className="form-control"
+                    placeholder="Search issues, projects..."
+                    aria-label="Search projects and issues"
+                    value={topSearchText}
+                    onChange={(event) => setTopSearchText(event.target.value)}
+                    onFocus={() => {
+                      if (isMobileScreen()) setMobileSearchOpen(true)
+                    }}
+                  />
+                  {mobileSearchOpen && (
+                    <button
+                      type="button"
+                      className="subscription-search-close"
+                      aria-label="Close search"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setMobileSearchOpen(false)
+                      }}
+                    >
+                      <FiX size={16} />
+                    </button>
+                  )}
                 </div>
 
                 <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications">
@@ -174,19 +206,6 @@ export default function Subscription() {
               </div>
             </div>
           </header>
-
-          {/* Mobile search overlay: opens when the compact search pill is tapped */}
-          {mobileSearchOpen && (
-            <div className="mobile-search-overlay" role="dialog" aria-modal="true" onClick={() => setMobileSearchOpen(false)}>
-              <div className="mobile-search-box" onClick={(e) => e.stopPropagation()}>
-                <div className="input-group">
-                  <span className="input-group-text"><FiSearch /></span>
-                  <input autoFocus className="form-control" placeholder="Search issues, projects..." aria-label="Mobile search input" />
-                  <button className="btn btn-link ms-2" aria-label="Close search" onClick={() => setMobileSearchOpen(false)}><FiX size={20} /></button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Upgrade modal */}
           {showUpgradeModal && (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import './Dashboard.css'
 import './Backlog.css'
@@ -22,7 +22,8 @@ import {
   FiBookOpen,
   FiAlertCircle,
   FiCheckSquare,
-  FiZap
+  FiZap,
+  FiX
 } from 'react-icons/fi'
 
 const DONE_STATUSES = new Set(['done', 'closed', 'completed', 'resolved'])
@@ -175,9 +176,18 @@ export default function Backlog() {
   const selectedOrg = typeof window !== 'undefined' ? getStoredJson('org', null) : null
   const projectStorageKey = useMemo(() => buildStorageKey(selectedOrg), [selectedOrg])
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [projects, setProjects] = useState([])
   const [issues, setIssues] = useState([])
   const [manualActiveIssueIds, setManualActiveIssueIds] = useState([])
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [topSearchText, setTopSearchText] = useState('')
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Backlog was refreshed', time: '5m ago', read: false },
+    { id: 2, title: 'Sprint issue moved to done', time: '18m ago', read: true }
+  ])
+  const notificationRef = useRef(null)
   const notificationCount = useNotificationCount()
   const projectFromState = location.state?.project
 
@@ -185,6 +195,16 @@ export default function Backlog() {
     const storedProjects = getStoredJson(projectStorageKey, [])
     setProjects(Array.isArray(storedProjects) ? storedProjects : [])
   }, [projectStorageKey])
+
+  useEffect(() => {
+    function sync(e){
+      const d = e.detail || {}
+      if (typeof d.collapsed === 'boolean') setCollapsed(d.collapsed)
+      if (typeof d.open === 'boolean') setMobileOpen(d.open)
+    }
+    window.addEventListener('sidebar:state', sync)
+    return () => window.removeEventListener('sidebar:state', sync)
+  }, [])
 
   const activeProject = useMemo(() => {
     if (projectFromState?.id) {
@@ -347,9 +367,13 @@ export default function Backlog() {
     setNotifications((current) => current.map((item) => ({ ...item, read: true })))
   }
 
+  function isMobileScreen() {
+    return typeof window !== 'undefined' && window.innerWidth <= 992
+  }
+
   return (
     <div className="backlog-page-root dashboard-root d-flex">
-      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''}`}>
+      <aside className={`sidebar d-flex flex-column ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-top">
           <div className="brand d-flex align-items-center">
             <div className="brand-logo">KP</div>
@@ -427,12 +451,41 @@ export default function Backlog() {
         <FiMenu size={18} />
       </button>
 
+      <div className={`mobile-overlay ${mobileOpen ? 'show' : ''}`} onClick={() => setMobileOpen(false)} />
+
       <main className={`content backlog-content flex-grow-1 p-4 ${collapsed ? 'with-topbar' : ''}`}>
         <header className="backlog-top-strip">
-          <div className="top-search-row">
-            <div className="input-group top-search-medium">
+          <div className={`top-search-row ${mobileSearchOpen ? 'mobile-search-open' : ''}`}>
+            <div
+              className={`input-group top-search-medium ${mobileSearchOpen ? 'mobile-open' : ''}`}
+              onClick={() => {
+                if (isMobileScreen() && !mobileSearchOpen) setMobileSearchOpen(true)
+              }}
+            >
               <span className="input-group-text"><FiSearch /></span>
-              <input className="form-control" placeholder="Search issues, projects..." aria-label="Search issues and projects" />
+              <input
+                className="form-control"
+                placeholder="Search issues, projects..."
+                aria-label="Search issues and projects"
+                value={topSearchText}
+                onChange={(event) => setTopSearchText(event.target.value)}
+                onFocus={() => {
+                  if (isMobileScreen()) setMobileSearchOpen(true)
+                }}
+              />
+              {mobileSearchOpen && (
+                <button
+                  type="button"
+                  className="dashboard-search-close"
+                  aria-label="Close search"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setMobileSearchOpen(false)
+                  }}
+                >
+                  <FiX size={16} />
+                </button>
+              )}
             </div>
 
             <button className={`btn btn-link me-2 bell-black ${notificationCount > 0 ? 'has-notifications' : ''}`} title="Notifications" onClick={() => navigate('/all-my-issues')}>
